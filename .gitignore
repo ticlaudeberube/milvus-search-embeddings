@@ -1,0 +1,4 @@
+.DS_Store
+my_database.db
+Tests/__pycache__/*
+__pycache__/

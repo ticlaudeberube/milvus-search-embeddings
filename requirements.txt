@@ -1,0 +1,5 @@
+pymilvus.model
+langchain_milvus
+langchain_huggingface 
+pymilvus
+pytest
