@@ -5,8 +5,8 @@
 - Access web UI: http://127.0.0.1:9091/webui/
 
 ## Demo
-- Set db-name, collection_name in envs file and run $ . ./envs.py
-- Create db: run create-milvus-db 
+- Set db-name, collection_name in envs file and run $ . ./search-envs.py
+- Create db: run create-db 
 - Create collection: run create-collection.py
 - Run vectorize-document.py
 - Run search.py
