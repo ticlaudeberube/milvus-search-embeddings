@@ -1,12 +1,28 @@
+# About
+This is a Python POC for Milvus embedings, search and Milvus Docs RAG
+
 ## Milvus Db
 
-- Install Milvus Docker Container: https://milvus.io/docs/install_standalone-docker.md
+- [Install Milvus Docker Container](https://milvus.io/docs/install_standalone-docker.md)
 - Launch Milvus Docker container 
 - Access web UI: http://127.0.0.1:9091/webui/
 
-## Demo
-- Set db-name, collection_name in envs file and run $ . ./search-envs.py
-- Create db: run create-db 
-- Create collection: run create-collection.py
-- Run vectorize-document.py
-- Run search.py
+## Document folder
+Contains scripts for downloading and embed documents
+
+## Search folder
+Contains basic embedding Alan Touring search 
+
+## Utils folder
+Contains MilvusUitls custom satic class which is used by other scripts
+
+Script can be parameterized by adding a colelction_name or db_name on creation or deletion
+ 
+```$ python ./utils/create-collection.py  my_collection```
+
+## Test
+- Run pytest with coverage
+
+    ``` $ coverage run -m pytest tests/test_MilvusUtils.py ```
+
+    ``` $ coverage report -m ```

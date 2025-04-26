@@ -1,10 +1,17 @@
 
-from pymilvus import MilvusClient, Collection, MilvusException, connections, db, utility, model
+from pymilvus import MilvusClient, Collection, MilvusException, db, utility, model
 
 #Start/install Milvus container before use
-client = connections.connect(host="localhost", port=19530)
+client = MilvusClient( 
+    uri="http://localhost:19530",
+    token="root:Milvus"
+)
+
 
 class MilvusUtils:
+    @staticmethod
+    def get_client():
+        return client
     @staticmethod
     def create_database(db_name):
         try:
@@ -32,7 +39,7 @@ class MilvusUtils:
             print(f"An error occurred: {e}")
 
     @staticmethod
-    def create_collection(collection_name: str, client: MilvusClient):
+    def create_collection(collection_name: str):
         if client.has_collection(collection_name=collection_name):
             client.drop_collection(collection_name=collection_name)
         client.create_collection(
@@ -41,16 +48,16 @@ class MilvusUtils:
         )
 
     @staticmethod
-    def delete_collection(collection_name: str, client: MilvusClient):
+    def delete_collection(collection_name: str):
         client.drop_collection(collection_name=collection_name)
 
     @staticmethod
-    def insert_data(collection_name: str, data: list[dict], client: MilvusClient) -> dict:        
+    def insert_data(collection_name: str, data: list[dict]) -> dict:        
         res = client.insert(collection_name=collection_name, data=data)
         return res
-
+    
     @staticmethod
-    def vectorize_documents(collection_name: str, docs: list[str], client: MilvusClient)-> list[dict]: 
+    def vectorize_documents(collection_name: str, docs: list[str])-> list[dict]: 
         # This will download a small embedding model "paraphrase-albert-small-v2" (~50MB).
         embedding_fn = model.DefaultEmbeddingFunction()
 

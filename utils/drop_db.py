@@ -1,13 +1,10 @@
-from pymilvus import connections, db, MilvusClient
 import os,sys
+from MilvusUtils import MilvusUtils
 
-client = MilvusClient( 
-    uri="http://localhost:19530",
-    token="root:Milvus"
-)
-
+client = MilvusUtils.get_client()
+# TODO: Create a function to drop a database in MilvusUtils similar 
+# to create_database
 if __name__ == "__main__":
-    # conn = connections.connect(host="localhost", port=19530)
     
     if len(sys.argv) > 1:
         db_name = sys.argv[1]

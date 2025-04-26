@@ -1,11 +1,9 @@
 import os
+import sys
 
-from pymilvus import MilvusClient
+sys.path.insert(1, './utils')
 from MilvusUtils import MilvusUtils
-client = MilvusClient( 
-    uri="http://localhost:19530",
-    token="root:Milvus"
-)
+
 collection_name = os.getenv("MY_COLLECTION_NAME") or "demo_collection"
 
 documents = [
@@ -14,4 +12,4 @@ documents = [
     "Born in Maida Vale, London, Turing was raised in southern England.",
 ]
 
-MilvusUtils.vectorize_documents(collection_name, documents, client)
+MilvusUtils.vectorize_documents(collection_name, documents)
