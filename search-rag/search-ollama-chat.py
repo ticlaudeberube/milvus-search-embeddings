@@ -1,20 +1,15 @@
-import ollama
 from tqdm import tqdm
 from ollama import chat, ChatResponse
 from pymilvus import model
-import json, sys, os
+import sys, os
 from termcolor import colored, cprint
 
 
 sys.path.insert(1, './utils')
 from MilvusUtils import MilvusUtils
 client = MilvusUtils.get_client()
-collection_name = os.getenv("MY_COLLECTION_NAME") or "demo_collection"
+collection_name = os.getenv("MILVUS_OLLAMA_COLLECTION_NAME") or "demo_collection"
 
- # Use the `emb_text` function to convert the question to an embedding vector
-def emb_text(text):
-    response = ollama.embeddings(model="mxbai-embed-large", prompt=text)
-    return response["embedding"]
 
 # prepare prompt
 question = "How is data stored in milvus?"
@@ -24,7 +19,7 @@ cprint('\nPreparing...\n', 'green', attrs=['blink'])
 search_res = client.search(
     collection_name=collection_name,
     data=[
-        emb_text(question)
+        MilvusUtils.embed_text_ollama(question)
     ],
     limit=3,  # Return top 3 results
     search_params={"metric_type": "IP", "params": {}},  # Inner product distance
@@ -59,7 +54,7 @@ context = "\n".join(
 )
 def rag_query():
     print('\nUser prompt:\n'+ USER_PROMPT)
-    cprint('\nSearching...\n', 'green', attrs=['blink'])
+    cprint(f"Searching... {question}\n", 'green', attrs=['blink'])
     response: ChatResponse = chat(
         model="llama3.2",
         messages=[

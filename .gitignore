@@ -7,3 +7,4 @@ documents/*.zip
 documents/*.tar.gz
 documents/*.txt
 .coverage
+.gradio

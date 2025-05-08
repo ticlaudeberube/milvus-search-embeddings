@@ -1,4 +1,6 @@
 
+from sentence_transformers import SentenceTransformer
+import os, torch, ollama
 from pymilvus import MilvusClient, Collection, MilvusException, db, utility, model
 
 #Start/install Milvus container before use
@@ -7,6 +9,7 @@ client = MilvusClient(
     token="root:Milvus"
 )
 
+client.use_database(os.getenv("MY_DATABASE") or "default")
 
 class MilvusUtils:
     @staticmethod
@@ -39,13 +42,16 @@ class MilvusUtils:
             print(f"An error occurred: {e}")
 
     @staticmethod
-    def create_collection(collection_name: str):
+    def create_collection(collection_name: str,dimension=1536):
         if client.has_collection(collection_name=collection_name):
             client.drop_collection(collection_name=collection_name)
         client.create_collection(
             collection_name=collection_name,
-            dimension=768,  # The vectors we will use in this demo has 768 dimensions
+            dimension=dimension,
         )
+    @staticmethod 
+    def has_collection(collection: str) -> bool:
+        return client.has_collection(collection_name=collection)
 
     @staticmethod
     def delete_collection(collection_name: str):
@@ -57,13 +63,16 @@ class MilvusUtils:
         return res
     
     @staticmethod
-    def vectorize_documents(collection_name: str, docs: list[str])-> list[dict]: 
+    def vectorize_documents(collection_name: str, docs: list[str])-> list[dict, int]:
         # This will download a small embedding model "paraphrase-albert-small-v2" (~50MB).
         embedding_fn = model.DefaultEmbeddingFunction()
 
         vectors = embedding_fn.encode_documents(docs)
         # The output vector has 768 dimensions, matching the collection that we just created.
         print("Dim:", embedding_fn.dim, vectors[0].shape)  # Dim: 768 (768,)
+        dimension = embedding_fn.dim
+
+        MilvusUtils.create_collection(collection_name, dimension=dimension)
 
         # Each entity has id, vector representation, raw text, and a subject label that we use
         # to demo metadata filtering later.
@@ -77,6 +86,27 @@ class MilvusUtils:
 
         res = client.insert(collection_name=collection_name, data=data)
 
-        print(res)
+        # print(res)
 
-        return res
+        return res, dimension
+    
+    @staticmethod
+    def embed_text_hf(sentences:list[str], model="all-MiniLM-L6-v2") -> list[float]:
+        model = SentenceTransformer(model)
+        embeddings = model.encode(sentences, batch_size=256, show_progress_bar=True)
+        print(embeddings.tolist())
+        return embeddings.tolist()
+    
+    @staticmethod
+    def embed_text_ollama(text) -> list[float]:
+        model = os.getenv('MODEL_OLLAMA') or "nomic-embed-text"
+        response = ollama.embeddings(model=model, prompt=text)
+        return response["embedding"]
+
+    @staticmethod
+    def get_device():
+        if torch.backends.mps.is_available():
+            return torch.device("mps")
+        else:
+            print("⚠️ MPS not available. Falling back to CPU.")
+            return torch.device("cpu")
