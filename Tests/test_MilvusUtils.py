@@ -80,14 +80,13 @@ def test_delete_collection():
     
     # Verify collection was deleted
     assert client.has_collection(collection_name=test_collection) == False
-
-def test_insert_data():
+def test_insert_data() -> dict:
 
     # Test data
     test_collection = "test_collection"
     test_data = [
-        {"id": 1, "vector": [0.1] * 768, "text": "test1", "subject": "test"},
-        {"id": 2, "vector": [0.2] * 768, "text": "test2", "subject": "test"}
+        {"id": 1, "vector": [0.1] * 1536, "text": "test1", "subject": "test"},
+        {"id": 2, "vector": [0.2] * 1536, "text": "test2", "subject": "test"}
     ]
     
     # Create test collection
@@ -104,7 +103,7 @@ def test_insert_data():
     # Cleanup
     MilvusUtils.delete_collection(test_collection)
 
-def test_vectorize_documents():
+def test_vectorize_documents() -> dict:
     # Test setup
     collection_name = "test_collection"
     test_docs = ["This is a test document", "This is another test document"]
@@ -127,4 +126,5 @@ def test_vectorize_documents():
     finally:
         # Cleanup
         MilvusUtils.delete_collection(collection_name)
+        return result
 
