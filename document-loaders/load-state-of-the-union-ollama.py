@@ -18,7 +18,7 @@ from MilvusUtils import MilvusUtils
 
 
 client = MilvusUtils.get_client()
-collection="state_of_the_union"  # Name of the collection to be created
+collection="state_of_the_union_ollama"  # Name of the collection to be created
 
 def load():
      # Building the Vector Database
@@ -42,18 +42,18 @@ def load():
         length_function=len,
         is_separator_regex=False,
     )
-    texts = text_splitter.split_text(documents)
+    docs = text_splitter.split_text(documents)
     # print(texts[0])
 
     # Populate the vector database
     data = []
-    for i, line in enumerate(tqdm(texts, desc="Creating embeddings")):
+    for i, line in enumerate(tqdm(docs, desc="Creating embeddings")):
         data.append({"id": i, "vector": MilvusUtils.embed_text_ollama(line), "text": line})
 
     # print(data[0])
-
+    dimension= len(MilvusUtils.embed_text_ollama(docs[0]))
     MilvusUtils.create_collection(
-        collection_name=collection, dimension=1024
+        collection_name=collection, dimension=dimension
     )
 
     res = client.insert(
@@ -74,7 +74,11 @@ def search(query: str):
         collection_name=collection,
         data=[query_vectors], 
         output_fields=["text"], 
+        anns_field="vector",
+        limit=3,
+        search_params={"metric_type": "COSINE"}
     )
+    
     response = ''
     for r in res[0]:
         response += r["entity"]["text"]

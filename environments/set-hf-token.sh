@@ -1,3 +1,4 @@
+#set token for huggingface website - read
 export HF_TOKEN=""
 export HUGGINGFACEHUB_API_TOKEN=""
 export TOKENIZERS_PARALLELISM=false

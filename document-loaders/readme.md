@@ -9,5 +9,5 @@ Tested Ollama and HuggingFace embeddings on Mac Intel AMD GPU
 
 ### Env variables are to be set from search-rag folder
 ```
-. ./search-rag/set-envs.sh
+. ./environments/set-envs.sh
 ```

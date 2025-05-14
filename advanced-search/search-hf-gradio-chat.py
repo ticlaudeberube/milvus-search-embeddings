@@ -1,16 +1,22 @@
-import ollama
 from tqdm import tqdm
-from ollama import chat, ChatResponse
-from pymilvus import model
-import json, sys, os
+import sys, os
 from termcolor import colored, cprint
 import gradio as gr
+from huggingface_hub import InferenceClient
 
+# Add HF token for model access
+hf_token = os.getenv("HUGGINGFACEHUB_API_TOKEN")
+if not hf_token:
+    raise ValueError("Please set HUGGINGFACE_TOKEN environment variable")
+
+repo_id = "mistralai/Mixtral-8x7B-Instruct-v0.1"
+llm_client = InferenceClient(model=repo_id, timeout=120)
 
 sys.path.insert(1, './utils')
 from MilvusUtils import MilvusUtils
+
 client = MilvusUtils.get_client()
-collection_name = os.getenv("MILVUS_HF_COLLECTION_NAME") or "milvus_hf_collection"
+collection_name = os.getenv("MILVUS_HF_COLLECTION_NAME") or "demo_collection"
 
 def embed_text(text):
     response = MilvusUtils.embed_text_hf(text)
@@ -41,11 +47,12 @@ def rag_query(question):
         [line_with_distance[0] for line_with_distance in tqdm(retrieved_lines_with_distances, desc="Processing results")]
     )
 
-    SYSTEM_PROMPT = """
-    Human: You are an AI assistant. You are able to find answers to the questions from the contextual passage snippets provided.
-    """
-    USER_PROMPT = f"""
-    Use the following pieces of information enclosed in <context> tags to provide an answer to the question enclosed in <question> tags.
+    cprint('\nSearching...\n', 'green', attrs=['blink'])
+    PROMPT = f"""
+    Human: You are an AI assistant. You are able to find answers to the questions from 
+    the contextual passage snippets provided.
+    Use the following pieces of information enclosed in <context> tags to provide an answer 
+    to the question enclosed in <question> tags.
     <context>
     {context}
     </context>
@@ -54,16 +61,14 @@ def rag_query(question):
     </question>
     """
     cprint('\nSearching...\n', 'green', attrs=['blink'])
-    response: ChatResponse = chat(
-        model="llama3.2",
-        messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": USER_PROMPT},
-        ],  
-    )
-    print(response["message"]["content"])
+    prompt = PROMPT.format(context=context, question=question)
+    response = llm_client.text_generation(
+        prompt,
+        max_new_tokens=1000,
+    ).strip()
+    print(response)
     cprint('\nDone! \n', 'green', attrs=['blink'])
-    return response["message"]["content"]
+    return response
 
 defaultInference="How is data stored in milvus?"
 # Create Gradio interface

@@ -1,12 +1,12 @@
 from tqdm import tqdm
 from ollama import chat, ChatResponse
-from pymilvus import model
 import sys, os
 from termcolor import colored, cprint
 
 
 sys.path.insert(1, './utils')
 from MilvusUtils import MilvusUtils
+
 client = MilvusUtils.get_client()
 collection_name = os.getenv("MILVUS_OLLAMA_COLLECTION_NAME") or "demo_collection"
 
@@ -63,5 +63,6 @@ def rag_query():
         ],
     )
     print(response["message"]["content"])
+    return
 
 rag_query()

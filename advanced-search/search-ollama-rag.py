@@ -1,21 +1,22 @@
 import os
 from langchain_core.runnables import RunnablePassthrough
-from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_milvus import Milvus
 from langchain_core.prompts import PromptTemplate
 from langchain_ollama.llms import OllamaLLM
 from langchain_ollama import OllamaEmbeddings
 
-collection_name = os.getenv("MILVUS_COLLECTION_NAME") or "demo_collection"
+collection_name = os.getenv("MILVUS_OLLAMA_COLLECTION_NAME") or "demo_collection"
 question = "How is data stored in milvus?"
 
-llm = OllamaLLM(model="llama3.2")
+llm = OllamaLLM(model="llama2")
 embeddings = OllamaEmbeddings(model="llama3.2")
-docs = []
-vectorstore = Milvus.from_documents(
-    documents=docs,
-    embedding=embeddings,
+
+docs = [] # add docs from loader
+
+vectorstore = Milvus(
+    embedding_function=embeddings,
+    collection_name=collection_name,
     drop_old=True,  # Drop the old Milvus collection if it exists
 )
 
@@ -42,10 +43,12 @@ The response should be specific and use statistics or numbers when possible.
 
 Assistant:"""
  
+
 # Create a PromptTemplate instance with the defined template and input variables
 prompt = PromptTemplate(
     template=PROMPT_TEMPLATE, input_variables=["context", "question"]
 )
+
 # Convert the vector store to a retriever
 retriever = vectorstore.as_retriever()
 

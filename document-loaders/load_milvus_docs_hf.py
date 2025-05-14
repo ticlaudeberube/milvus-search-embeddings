@@ -28,7 +28,7 @@ def create_collection(embedding_dim=1024):
 def process():
     start = time.time()
     text_lines = []
-    for file_path in tqdm(glob("./documents/milvus_docs/en/**/*.md", recursive=True), desc="Reading files"):
+    for file_path in tqdm(glob("./document-loaders/milvus_docs/en/**/*.md", recursive=True), desc="Reading files"):
         with open(file_path, "r") as file:
             file_text = file.read()
 
@@ -39,7 +39,9 @@ def process():
     data = []
     for i in range(len(vectors)):
         data.append({"id": i, "vector": vectors[i], "text": text_lines[i]})
-    # print(data[0])
+    print(data)
+    if len(data) == 0:
+        return 
     client.insert(collection_name=collection_name, data=data)
     end = time.time()
     print(f"{device} time: {end - start:.2f} seconds")

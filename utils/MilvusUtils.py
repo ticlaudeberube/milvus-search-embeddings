@@ -94,7 +94,6 @@ class MilvusUtils:
     def embed_text_hf(sentences:list[str], model="all-MiniLM-L6-v2") -> list[float]:
         model = SentenceTransformer(model)
         embeddings = model.encode(sentences, batch_size=256, show_progress_bar=True)
-        print(embeddings.tolist())
         return embeddings.tolist()
     
     @staticmethod

@@ -2,9 +2,10 @@
 my_database.db
 Tests/__pycache__/*
 __pycache__/
-documents/milvus_docs/**/*
+document-loaders/milvus_docs/**/*
 documents/*.zip
 documents/*.tar.gz
 documents/*.txt
 .coverage
 .gradio
+document-loaders/milvus_docs_2.4.x_en.zip

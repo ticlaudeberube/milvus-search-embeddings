@@ -1,8 +1,6 @@
-import ollama
 from tqdm import tqdm
 from ollama import chat, ChatResponse
-from pymilvus import model
-import json, sys, os
+import sys, os
 from termcolor import colored, cprint
 import gradio as gr
 

@@ -30,7 +30,7 @@ def create_collection(embedding_dim=1024):
 def process():
     text_lines = []
 
-    for file_path in tqdm(glob("./documents/milvus_docs/en/**/*.md", recursive=True), desc="Reading files"):
+    for file_path in tqdm(glob("./document-loaders/milvus_docs/en/**/*.md", recursive=True), desc="Reading files"):
         with open(file_path, "r") as file:
             file_text = file.read()
 
@@ -40,7 +40,9 @@ def process():
     data = []
     for i, line in enumerate(tqdm(text_lines, desc="Creating embeddings")):
         data.append({"id": i, "vector": MilvusUtils.embed_text_ollama(line), "text": line})
-
+    print(data)
+    if len(data) == 0:
+        return 
     dimension = len(data[0]['vector'])
     print(dimension)
     create_collection(dimension)
