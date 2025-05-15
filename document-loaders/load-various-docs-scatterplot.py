@@ -83,10 +83,11 @@ async def load():
     # get vector dimension
     text_vector = MilvusUtils.embed_text_ollama(docs[0])
     dim = len(text_vector)  #Dim: 1024
-
-    if not MilvusUtils.has_collection(collection_name):
-        MilvusUtils.create_collection(
-            collection_name=collection_name, dimension=dim
+    MilvusUtils.create_collection(
+        collection_name=collection_name, 
+        dimension=dim,
+        metric_type="IP",  # Inner product distance
+        consistency_level="Strong",
     )
         
     client.insert(
@@ -103,7 +104,9 @@ def search(query) -> list[dict, list[float]]:
         collection_name=collection_name,
         data=[query_vectors],
         limit=10,
-        output_fields=["text"], 
+        search_params={
+            "params": {"radius": 0.4, "range_filter": 0.7}
+        },
     )
 
     response = ''
@@ -123,11 +126,8 @@ def show_plot(search_res):
     tsne_results = tsne.fit_transform(X)
 
     df_tsne = pd.DataFrame(tsne_results, columns=["TSNE1", "TSNE2"])
-    df_tsne
 
     similar_ids = [gp["id"] for gp in search_res[0]]
-
-    df_norm = df_tsne[:-1]
 
     df_query = pd.DataFrame(df_tsne.iloc[-1]).T
 

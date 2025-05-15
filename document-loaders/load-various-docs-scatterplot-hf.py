@@ -87,7 +87,10 @@ async def load():
 
     if not MilvusUtils.has_collection(collection_name):
         MilvusUtils.create_collection(
-            collection_name=collection_name, dimension=dim
+            collection_name=collection_name, 
+            dimension=dim,
+            metric_type="IP",  # Inner product distance
+            consistency_level="Strong",
     )
         
     client.insert(
@@ -102,6 +105,9 @@ def search(query) -> list[dict, list[float]]:
         collection_name=collection_name,
         data=[query_vectors],
         limit=10,
+        search_params={
+            "params": {"radius": 0.4, "range_filter": 0.7}
+        },
         output_fields=["text"], 
     )
 
@@ -122,11 +128,8 @@ def show_plot(search_res):
     tsne_results = tsne.fit_transform(X)
 
     df_tsne = pd.DataFrame(tsne_results, columns=["TSNE1", "TSNE2"])
-    df_tsne
 
     similar_ids = [gp["id"] for gp in search_res[0]]
-
-    df_norm = df_tsne[:-1]
 
     df_query = pd.DataFrame(df_tsne.iloc[-1]).T
 
@@ -167,11 +170,12 @@ async def main():
     await load()
 
     querySoU = "What did the president say about Ketanji Brown Jackson?"
+    negativeSearchQuerySoU = "What did the president say about Victor Hugo?"
     queryMMA = "What happens when a competitor is injured?"
     queryUFC = "How much weight allowance is allowed in non championship fights in the UFC?"
     queryUFC310 = "Who won in the Pantoja vs Asakura fight at UFC 310?"
 
-    query = queryUFC310
+    query = queryMMA
     s, queryVector = search(query)
     if len(data) > 0:
         data.append({"id": len(data)+1, "vector": queryVector, "text": f"{query}"})
