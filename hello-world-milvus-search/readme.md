@@ -11,7 +11,7 @@
     ```python create-collection.py my_colletion```
 - Vectorize:
 
-    ```python search/vectorize-search.py```
+    ```python hello-world-milvus-search/vectorize-search.py```
 - Search: 
 
-    ```python search/search.py```
+    ```python hello-world-milvus-search/range-search.py```

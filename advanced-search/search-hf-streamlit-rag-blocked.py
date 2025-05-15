@@ -3,21 +3,21 @@ from langchain_core.runnables import RunnablePassthrough
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_milvus import Milvus
-from langchain_huggingface import HuggingFaceEndpoint, HuggingFaceEmbeddings
+from langchain_huggingface import HuggingFacePipeline, HuggingFaceEmbeddings
+from langchain_huggingface.llms import HuggingFacePipeline
 import streamlit as st
 
 def initialize_qa_system():
     """Initialize the QA system components"""
     collection_name = os.getenv("MILVUS_HF_COLLECTION_NAME") or "demo_collection"
-    
-    llm = HuggingFaceEndpoint(
-        repo_id="mistralai/Mixtral-8x7B-Instruct-v0.1",
+ 
+    llm = HuggingFacePipeline.from_model_id(
+        model_id="gpt2",
         task="text-generation",
-        max_new_tokens=512,
-        do_sample=False,
-        repetition_penalty=1.03,
+        device=0,  # does not work on Mac Intel
+        pipeline_kwargs={"max_new_tokens": 10},
     )
-    
+
     embeddingModel = os.getenv("MODEL_HF") or "sentence-transformers/all-mpnet-base-v2"
     embeddings = HuggingFaceEmbeddings(model_name=embeddingModel)
 
@@ -30,6 +30,7 @@ def initialize_qa_system():
     return vectorstore, llm
 
 def create_qa_chain(vectorstore, llm):
+    # Wrap HuggingFace InferenceClient in a callable that accepts string input
     """Create the question-answering chain"""
     retriever = vectorstore.as_retriever()
     
@@ -37,7 +38,6 @@ def create_qa_chain(vectorstore, llm):
     Human: You are an AI assistant, and provides answers to questions by using fact based and statistical information when possible.
     Use the following pieces of information to provide a concise answer to the question enclosed in <question> tags.
     If you don't know the answer, just say that you don't know, don't try to make up an answer.
-    Provide readable text and avoid using code blocks.
     <context>
     {context}
     </context>
@@ -58,6 +58,7 @@ def create_qa_chain(vectorstore, llm):
     def format_docs(docs):
         return "\n\n".join(doc.page_content for doc in docs)
     
+    # Create the RAG chain
     rag_chain = (
         {"context": retriever | format_docs, "question": RunnablePassthrough()}
         | prompt
@@ -75,10 +76,10 @@ def create_streamlit_ui():
         layout="centered"
     )
     
-    # st.title("🤖 AI Question Answering System")
+    st.title("🤖 AI Question Answering System")
     
     st.markdown("""
-    ### Welcome to the Milvus Docs Answering System
+    ### Welcome to the AI Question Answering System
     Ask any question and get AI-powered answers based on the available knowledge base.
     """)
     

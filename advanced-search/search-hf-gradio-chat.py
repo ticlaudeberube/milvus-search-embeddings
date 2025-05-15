@@ -23,11 +23,11 @@ def embed_text(text):
     print(response[0])
     return response
 
-def rag_query(question):
+# TODO: implement history
+def rag_query(question, history=[]):
     limit = 10
     cprint(f'\nRetreiving context: limit ({limit}) documents...\n', 'green', attrs=['blink'])
 
-    
     #start searching
     search_res = client.search(
         collection_name=collection_name,
@@ -70,16 +70,16 @@ def rag_query(question):
     cprint('\nDone! \n', 'green', attrs=['blink'])
     return response
 
-defaultInference="How is data stored in milvus?"
-# Create Gradio interface
-interface = gr.Interface(
-    fn=rag_query,
-    inputs=gr.Textbox(lines=2, placeholder="Enter your question here...", value=defaultInference ),
-    outputs="text",
-    title="Query Milvus Docs",
-    description="Ask questions about Milvus and get answers from the knowledge base"
+chat = gr.ChatInterface(
+    rag_query,
+    type="messages",
+    flagging_mode="manual",
+    flagging_options=["Like", "Spam", "Inappropriate", "Other"],
+    save_history=True,
+    title="RAG with Milvus and HuggingFace",
+    description="This is a demo of a Retrieval-Augmented Generation (RAG) system using Milvus and HuggingFace. "
+                "You can ask questions and get answers based on the context retrieved from the Milvus database.",
 )
 
-# Launch the interface
-interface.launch()
-# embed_text(defaultInference)
+if __name__ == "__main__":
+    chat.launch()

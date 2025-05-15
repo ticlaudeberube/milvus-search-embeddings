@@ -78,7 +78,7 @@ def create_streamlit_ui():
     st.title("🤖 AI Question Answering System")
     
     st.markdown("""
-    ### Welcome to the AI Question Answering System
+    ### Welcome to the Milvus Question Answering System
     Ask any question and get AI-powered answers based on the available knowledge base.
     """)
     

@@ -39,7 +39,7 @@ def process():
     data = []
     for i in range(len(vectors)):
         data.append({"id": i, "vector": vectors[i], "text": text_lines[i]})
-    print(data)
+    # print(data)
     if len(data) == 0:
         return 
     client.insert(collection_name=collection_name, data=data)

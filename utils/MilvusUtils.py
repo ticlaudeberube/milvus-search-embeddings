@@ -63,7 +63,7 @@ class MilvusUtils:
         return res
     
     @staticmethod
-    def vectorize_documents(collection_name: str, docs: list[str])-> list[dict, int]:
+    def vectorize_documents(collection_name: str, docs: list[str]) -> list[dict, int]:
         # This will download a small embedding model "paraphrase-albert-small-v2" (~50MB).
         embedding_fn = model.DefaultEmbeddingFunction()
 
@@ -91,16 +91,17 @@ class MilvusUtils:
         return res, dimension
     
     @staticmethod
-    def embed_text_hf(sentences:list[str], model="all-MiniLM-L6-v2") -> list[float]:
-        model = SentenceTransformer(model)
-        embeddings = model.encode(sentences, batch_size=256, show_progress_bar=True)
+    def embed_text_hf(sentences:list[str], model = None) -> list[float]:
+        _model =  model or os.getenv('MODEL_HF')
+        st = SentenceTransformer(_model)
+        embeddings = st.encode(sentences, batch_size=256, show_progress_bar=True)
         return embeddings.tolist()
     
     @staticmethod
-    def embed_text_ollama(text) -> list[float]:
-        model = os.getenv('MODEL_OLLAMA') or "nomic-embed-text"
-        response = ollama.embeddings(model=model, prompt=text)
-        return response["embedding"]
+    def embed_text_ollama(text: str, model = None) -> list[float]:
+        _model = model or os.getenv('MODEL_OLLAMA')
+        embeddings = ollama.embeddings(model=_model, prompt=text)
+        return embeddings["embedding"]
 
     @staticmethod
     def get_device():
