@@ -3,9 +3,9 @@ from langchain_core.runnables import RunnablePassthrough
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_milvus import Milvus
-from langchain_ollama.llms import OllamaLLM
-from langchain_ollama import OllamaEmbeddings
-import streamlit as st
+from langchain_ollama.llms import OllamaLLM  # type: ignore
+from langchain_ollama import OllamaEmbeddings  # type: ignore
+import streamlit as st  # type: ignore
 
 def initialize_qa_system():
     """Initialize the QA system components"""

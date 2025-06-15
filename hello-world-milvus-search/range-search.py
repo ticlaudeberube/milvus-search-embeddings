@@ -9,6 +9,7 @@ from MilvusUtils import MilvusUtils
 embedding_fn = model.DefaultEmbeddingFunction()
 notFoundQuery = "Who is Victor Hugo?"
 query = "Who is Alan Turing?"
+livedIn = "Did Alan Turing lived near Turing city"
 query_vectors = embedding_fn.encode_queries([query])
 
 collection_name = os.getenv("MY_COLLECTION_NAME") or "demo_collection"
