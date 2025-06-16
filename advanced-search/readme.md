@@ -16,10 +16,9 @@ This ddmeo will search Milvus Documentation.
     ```
 
 - Run:
-  ```
-        $ python advanced-search/search-[hr|ollama]-gradio-chat.py
+     ```
+        $ streamlit run advanced-search/search-rag-streamlit.py
     ```
-    
     ```
-        $ streamlit run advanced-search/search-[hf|ollama]-streamlit-rag.py
+        $ streamlit run advanced-search/search-rag-streamlit.py -- --model-provider=ollama --model=llama2
     ```

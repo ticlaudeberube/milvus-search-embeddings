@@ -9,3 +9,4 @@ documents/*.txt
 .coverage
 .gradio
 document-loaders/milvus_docs_2.4.x_en.zip
+.conda/

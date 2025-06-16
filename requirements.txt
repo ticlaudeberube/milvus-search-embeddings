@@ -27,3 +27,5 @@ milvus-cli
 pypdf
 asyncio
 streamlit
+torch
+sentence-transformers
