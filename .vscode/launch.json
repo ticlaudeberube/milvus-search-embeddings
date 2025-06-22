@@ -1,15 +1,33 @@
 {
   "configurations": [
-  {
-    "name": "Python: Current File",
-    "type": "debugpy",
-    "request": "launch",
-    "program": "${file}",
-    "console": "integratedTerminal",
-    "args": ["--model-provider=ollama", "--model=nomic-embed-text"],
-    "env": {
-      "PYTHONPATH": "${workspaceFolder}"
+    {
+      "name": "Python: Current File",
+      "type": "debugpy",
+      "request": "launch",
+      "preLaunchTask": "py312-env",
+      "program": "${file}",
+      "console": "integratedTerminal",
+      "args": ["--model_provider=ollama"],
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}"
+      }
+    },
+    {
+      "name": "Python: Streamlit",
+      "type": "debugpy",
+      "request": "launch",
+      "preLaunchTask": "py312-env",
+      "module": "streamlit",
+      "args": [
+        "run",
+        "${file}",
+        "--",
+        "--model_provider=ollama",
+      ],
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}"
+      },
+      "justMyCode": true
     }
-  }
-]
+  ]
 }
