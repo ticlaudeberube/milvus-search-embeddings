@@ -149,13 +149,48 @@ class MilvusUtils:
 
         res = client.insert(collection_name=collection_name, data=data)
 
-        # print(res)
-
         return res, dimension
     
     @staticmethod
+    def embed_text(text: str | list[str], provider: str = None, model: str = None) -> list[float]:
+        """
+        Generic embedding interface that supports multiple providers.
+
+        Args:
+            text (str | list[str]): The text to embed. Can be a single string or list of strings.
+            provider (str, optional): The provider to use ('hf' or 'ollama'). If not provided, uses EMBEDDING_PROVIDER env var.
+            model (str, optional): The model name to use. If not provided, uses MODEL_HF or MODEL_OLLAMA env var based on provider.
+
+        Returns:
+            list of float: The embeddings for the text.
+        """
+        provider = provider or os.getenv('EMBEDDING_PROVIDER', 'hf')
+        
+        if provider == 'hugginface':
+            _model = model or os.getenv('MODEL_HF')
+            st = SentenceTransformer(_model)
+            # Convert single string to list for consistent handling
+            text_input = [text] if isinstance(text, str) else text
+            embeddings = st.encode(text_input, batch_size=256, show_progress_bar=True)
+            return embeddings.tolist() if len(text_input) > 1 else embeddings[0].tolist()
+        
+        elif provider == 'ollama':
+            _model = model or os.getenv('MODEL_OLLAMA')
+            # Ollama only supports single text input
+            if isinstance(text, list):
+                # For lists, we process one at a time and return list of embeddings
+                return [ollama.embeddings(model=_model, prompt=t)["embedding"] for t in text]
+            return ollama.embeddings(model=_model, prompt=text)["embedding"]
+        
+        else:
+            raise ValueError(f"Unsupported embedding provider: {provider}")
+            
+    # Keep old methods for backward compatibility but mark as deprecated
+    @staticmethod
     def embed_text_hf(sentences:list[str], model = None) -> list[float]:
         """
+        DEPRECATED: Use embed_text() with provider='ollama' instead.
+      
         Generates embeddings for a list of sentences using a Hugging Face model.
 
         Args:
@@ -169,10 +204,11 @@ class MilvusUtils:
         st = SentenceTransformer(_model)
         embeddings = st.encode(sentences, batch_size=256, show_progress_bar=True)
         return embeddings.tolist()
-    
     @staticmethod
     def embed_text_ollama(text: str, model = None) -> list[float]:
         """
+        DEPRECATED: Use embed_text() with provider='ollama' instead.
+        
         Generates embeddings for a text using an Ollama model.
 
         Args:

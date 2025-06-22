@@ -6,6 +6,7 @@ langchain_milvus
 langchain_huggingface 
 huggingface_hub
 pymilvus
+pymilvus.model
 pytest
 pytest-cov
 termcolor
@@ -18,7 +19,7 @@ langchain_openai
 gradio
 bs4
 wget
-numpy
+numpy==1.26.0
 matplotlib
 seaborn
 pandas

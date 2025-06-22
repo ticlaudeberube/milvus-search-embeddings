@@ -16,6 +16,7 @@ from langchain_milvus import Milvus
 from langchain_community.embeddings import FakeEmbeddings
 from langchain_community.vectorstores import FAISS
 import streamlit as st  # type: ignore
+from config import ModelProvider
 
 # Set verbose to False to avoid unnecessary output
 set_verbose(False)
@@ -27,39 +28,64 @@ set_verbose(False)
 
 # Global variables for model configuration
 GLOBAL_CONFIG = {
-    "model_provider": "huggingface",
-    "model": "mistralai/Mixtral-8x7B-Instruct-v0.1",
-    "collection": "milvus_hf_collection"
+    "model_provider": ModelProvider.OLLAMA.value,  # Default to Ollama provider
+    "model": "llama2",  # Default Ollama model
+    "collection": "milvus_ollama_collection"
 }
-
-class ModelProvider(str, Enum):
-    HUGGINGFACE = "huggingface"
-    OLLAMA = "ollama"
 
 @dataclass
 class QAConfig:
     """Configuration for the QA system"""
-    collection_name: str = os.getenv("MILVUS_HF_COLLECTION_NAME", "demo_collection")
-    embedding_model=os.getenv("MODEL_HF", "sentence-transformers/all-mpnet-base-v2"),
-    model_provider: str = "huggingface"
-    max_tokens: int = int(os.getenv("MAX_TOKENS", "512"))
-    model: str = os.getenv("MODEL_HF", "mistralai/Mixtral-8x7B-Instruct-v0.1")
+    model_provider: str = GLOBAL_CONFIG["model_provider"]
+    model: str = ""
+    embedding_model: str = ""
+    collection_name: str = ""
+    max_tokens: int = 512
     
     def __post_init__(self):
-        """Set the appropriate model based on provider"""
-        self.embedding_model = self.embedding_model[0] if isinstance(self.embedding_model, tuple) else self.embedding_model
-        self.model = self.model[0] if isinstance(self.model, tuple) else self.model
+        """Get all configuration from the provider config"""
+        from config import model_registry
+        
+        # Get provider config
+        provider_config = model_registry.get_provider(self.model_provider)
+        
+        # Get all configuration from provider config
+        self.model = provider_config.default_model
+        self.embedding_model = provider_config.embedding_model
+        self.collection_name = provider_config.collection_name
+        self.max_tokens = provider_config.max_tokens
 
 class QASystem:
     """Milvus-based Question Answering System"""
     
-    def __init__(self, config: Optional[QAConfig] = None):
-        self.config = config or QAConfig()
+    def __init__(self, config: QAConfig):
+        self.config = config
         self.vectorstore, self.llm = self._setup_components()
         self.qa_chain = self._create_chain()
     
+    @staticmethod
+    @st.cache_resource
+    def _get_embeddings(provider: str, model_name: str):
+        """Get embeddings model with caching"""
+        if provider == "huggingface":
+            from langchain_huggingface import HuggingFaceEmbeddings
+            return HuggingFaceEmbeddings(model_name=model_name)
+        else:  # Ollama
+            from langchain_ollama import OllamaEmbeddings
+            return OllamaEmbeddings(model=model_name)
+    
     def _setup_components(self) -> Tuple[Any, LLM]:
         """Initialize LLM and vector store"""
+        from config import model_registry
+        
+        # Get provider config for additional parameters
+        provider_config = model_registry.get_provider(self.config.model_provider)
+        additional_params = provider_config.additional_params or {}
+        
+        # Get model-specific and Milvus-specific parameters
+        model_params = additional_params.get("model_params", {})
+        milvus_params = additional_params.get("milvus_params", {})
+        
         # Initialize LLM based on provider
         try:
             if self.config.model_provider == "huggingface":
@@ -72,10 +98,8 @@ class QASystem:
                     try:
                         llm = HuggingFaceEndpoint(
                             repo_id=self.config.model,
-                            task="conversational",
                             max_new_tokens=self.config.max_tokens,
-                            do_sample=False,
-                            repetition_penalty=1.03,
+                            **model_params  # Only pass model-specific params
                         )
                     except Exception as e:
                         # Fallback to a more reliable model
@@ -85,8 +109,12 @@ class QASystem:
                     from langchain_community.llms import FakeListLLM
                     llm = FakeListLLM(responses=["Sorry, HuggingFace module could not be loaded."])
                     
-                # Use simple embeddings to avoid NumPy issues
-                embeddings = FakeEmbeddings(size=768)
+                # Use cached embeddings for better performance
+                try:
+                    # Use a model with consistent 768-dimensional embeddings
+                    embeddings = self._get_embeddings("huggingface", "sentence-transformers/all-mpnet-base-v2")
+                except:
+                    embeddings = FakeEmbeddings(size=768)
                 
             else:  # Ollama
                 # Import Ollama modules only when needed
@@ -94,13 +122,16 @@ class QASystem:
                     from langchain_ollama.llms import OllamaLLM
                     from langchain_ollama import OllamaEmbeddings
                     
+                    # Get base_url from model params
+                    base_url = model_params.get("base_url", "http://localhost:11434")
+                    
                     llm = OllamaLLM(
                         model=self.config.model,
                         num_predict=self.config.max_tokens,
-                        base_url=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+                        base_url=base_url
                     )
-                    ollamaEmbeddingModel = os.getenv("MODEL_OLLAMA") or "llama3.2"
-                    embeddings = OllamaEmbeddings(model=ollamaEmbeddingModel)
+                    # Use cached embeddings for better performance
+                    embeddings = self._get_embeddings("ollama", "nomic-embed-text")
                 except ImportError:
                     from langchain_community.llms import FakeListLLM
                     llm = FakeListLLM(responses=["Sorry, Ollama module could not be loaded."])
@@ -121,14 +152,17 @@ class QASystem:
                 loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(loop)
                 
-            # Get Milvus connection parameters from environment variables
-            milvus_host = os.getenv("MILVUS_HOST", "localhost")
-            milvus_port = os.getenv("MILVUS_PORT", "19530")
+            # Get Milvus connection parameters from config
+            milvus_host = milvus_params.get("host", "localhost")
+            milvus_port = milvus_params.get("port", "19530")
+            
+            # Use provider-specific collection name to avoid dimension conflicts
+            provider_collection = f"{self.config.collection_name}_{self.config.model_provider}"
             
             # Now try to connect to Milvus
             vectorstore = Milvus(
                 embedding_function=embeddings,
-                collection_name=self.config.collection_name,
+                collection_name=provider_collection,
                 connection_args={"host": milvus_host, "port": milvus_port},
                 drop_old=False,
             )
@@ -173,13 +207,70 @@ class QASystem:
             | StrOutputParser()
         )
     
+    def _handle_dimension_mismatch(self):
+        """Handle vector dimension mismatch by recreating the collection"""
+        from config import model_registry
+        
+        # Get provider config
+        provider_config = model_registry.get_provider(self.config.model_provider)
+        additional_params = provider_config.additional_params or {}
+        
+        # Get Milvus-specific parameters
+        milvus_params = additional_params.get("milvus_params", {})
+        
+        # Get embedding model based on provider using cached method
+        if self.config.model_provider == "huggingface":
+            embeddings = self._get_embeddings("huggingface", "sentence-transformers/all-mpnet-base-v2")
+        else:  # Ollama
+            embeddings = self._get_embeddings("ollama", "nomic-embed-text")
+        
+        # Get Milvus connection parameters
+        milvus_host = milvus_params.get("host", "localhost")
+        milvus_port = milvus_params.get("port", "19530")
+        
+        # Use provider-specific collection name
+        provider_collection = f"{self.config.collection_name}_{self.config.model_provider}"
+        
+        # Recreate the collection with the correct dimensions
+        st.warning(f"Vector dimension mismatch detected. Recreating collection {provider_collection}...")
+        
+        # Create new vectorstore with drop_old=True to force recreation
+        from langchain_milvus import Milvus
+        self.vectorstore = Milvus(
+            embedding_function=embeddings,
+            collection_name=provider_collection,
+            connection_args={"host": milvus_host, "port": milvus_port},
+            drop_old=True,  # Force recreation
+        )
+        
+        # Recreate the chain
+        self.qa_chain = self._create_chain()
+    
     def answer(self, question: str) -> str:
         """Get answer for a question"""
         try:
-            return self.qa_chain.invoke({"question": question})
+            # Check if search should be aborted
+            if st.session_state.get("abort_search", False):
+                # Reset the flag
+                st.session_state["abort_search"] = False
+                return "Search aborted due to model provider change."
+                
+            # Pass the question directly as a string, not as a dictionary
+            return self.qa_chain.invoke(question)
         except Exception as e:
+            # Check again if search was aborted during processing
+            if st.session_state.get("abort_search", False):
+                # Reset the flag
+                st.session_state["abort_search"] = False
+                return "Search aborted due to model provider change."
+                
             if "Connection refused" in str(e) and self.config.model_provider == "ollama":
                 return f"Error: Ollama server not available. Please check if the server is running."
+            elif "vector dimension mismatch" in str(e):
+                # Handle dimension mismatch by recreating the collection
+                self._handle_dimension_mismatch()
+                # Try again with the recreated collection
+                return self.qa_chain.invoke(question)
             raise e
 
 class UI:
@@ -191,8 +282,15 @@ class UI:
         self.qa = QASystem(self.config)
         
     def _on_provider_change(self):
-        """Enable the Apply button when provider changes"""
+        """Enable the Apply button when provider changes and abort any ongoing search"""
         st.session_state.button_enabled = True
+        
+        # Set flag to abort any ongoing search
+        st.session_state["abort_search"] = True
+        
+        # Clear any existing QA system to force recreation
+        if 'qa_system' in st.session_state:
+            del st.session_state['qa_system']
         
     def _setup(self):
         """Configure the page"""
@@ -212,6 +310,7 @@ class UI:
     def _get_config_from_ui(self) -> QAConfig:
         """Get configuration from UI inputs"""
         global GLOBAL_CONFIG
+        from config import model_registry
         
         # Use initial config from session state if available
         initial_config = st.session_state.get("initial_config", GLOBAL_CONFIG)
@@ -219,137 +318,181 @@ class UI:
         with st.sidebar:
             st.header("Model Configuration")
             
-            # Use initial config for default values
-            default_index = 0 if initial_config.get("provider", GLOBAL_CONFIG["model_provider"]) == "huggingface" else 1
+            # Get provider options
+            provider_options = [p.value for p in ModelProvider]
+            
+            # Use initial config for default values, defaulting to first provider if not set
+            current_provider = initial_config.get("provider", GLOBAL_CONFIG.get("model_provider", provider_options[0]))
+            default_index = provider_options.index(current_provider) if current_provider in provider_options else 0
             
             provider_value = st.selectbox(
                 "Select Model Provider",
-                options=[p.value for p in ModelProvider],
-                index=default_index
+                options=provider_options,
+                index=default_index,
+                key="model_provider_config",
+                on_change=self._on_provider_change
             )
             
             # Update global config when UI changes
             GLOBAL_CONFIG["model_provider"] = provider_value
             
-            # Use appropriate model based on provider
-            if provider_value == "huggingface":
-                default_model = initial_config.get("model", GLOBAL_CONFIG["model"]) if provider_value == initial_config.get("provider", provider_value) else "mistralai/Mixtral-8x7B-Instruct-v0.1"
-                model = st.text_input("HuggingFace Model", value=default_model)
-                GLOBAL_CONFIG["model"] = model
-                GLOBAL_CONFIG["collection_name"] = os.getenv("MILVUS_HF_COLLECTION_NAME", "demo_collection")
-
-            else:
-                default_model = initial_config.get("model", GLOBAL_CONFIG["model"]) if provider_value == initial_config.get("provider", provider_value) else "llama2"
-                model = st.text_input("Ollama Model", value=default_model)
-                GLOBAL_CONFIG["model"] = model
-                GLOBAL_CONFIG["collection_name"] = os.getenv("MILVUS_OLLAMA_COLLECTION_NAME", "demo_collection")
-                
-            return QAConfig(model_provider=provider_value, model=model)
+            # Get provider config
+            provider_config = model_registry.get_provider(provider_value)
+            
+            # Get model and collection from provider config
+            model = provider_config.default_model
+            collection = provider_config.collection_name
+            
+            print(f"UI: Using model '{model}' from provider '{provider_value}' with collection '{collection}'")
+            
+            # Update global config with model and collection from provider
+            GLOBAL_CONFIG["model"] = model
+            GLOBAL_CONFIG["collection"] = collection
+            
+            # Display current model and collection (read-only)
+            st.text(f"Current {provider_value} Model: {model}")
+            st.text(f"Collection: {collection}")
+            
+            # Create config with just the provider - it will get all other settings from provider config
+            return QAConfig(model_provider=provider_value)
     
     def run(self):
         """Run the UI"""
         global GLOBAL_CONFIG
+        from config import model_registry
         
-        # Display model change confirmation if existson if exists
-        if "model_changed" in st.session_state:
-            st.success(st.session_state["model_changed"])
-            if not st.session_state.get("message_displayed"):
-                st.session_state["message_displayed"] = True
-            else:
-                del st.session_state["model_changed"]
-                del st.session_state["message_displayed"]
-                
+        # Create a placeholder for messages
+        message_placeholder = st.empty()
+        
         # Add model provider selector in sidebar
         with st.sidebar:
             st.header("Model Settings")
             
+            # Get provider options
+            provider_options = [p.value for p in ModelProvider]
+            
             # Use initial config from session state if available
             initial_config = st.session_state.get("initial_config", {})
-            provider_from_init = initial_config.get("provider", GLOBAL_CONFIG["model_provider"])
+            provider_from_init = initial_config.get("provider", GLOBAL_CONFIG.get("model_provider", provider_options[0]))
             
-            provider_index = 0 if provider_from_init == "huggingface" else 1
+            # Find the index of the current provider in the options list
+            try:
+                provider_index = provider_options.index(provider_from_init)
+            except ValueError:
+                provider_index = 0  # Default to first provider if not found
+                
             # Store current provider to detect changes
-            current_provider = GLOBAL_CONFIG["model_provider"]
+            current_provider = GLOBAL_CONFIG.get("model_provider", provider_options[0])
             
             # Check if this is the first load
             if st.session_state.last_provider is None:
                 st.session_state.last_provider = current_provider
             
-            # Use a callback to enable the button when provider changes
+            # Provider selection
             provider_value = st.selectbox(
                 "Select Model Provider",
-                options=[p.value for p in ModelProvider],
+                options=provider_options,
                 index=provider_index,
-                key="model_provider_select",
-                on_change=self._on_provider_change
+                key="model_provider_select"
             )
             
             # Update global config when provider changes
-            if GLOBAL_CONFIG["model_provider"] != provider_value:
+            if GLOBAL_CONFIG.get("model_provider") != provider_value:
+                # Set the provider
                 GLOBAL_CONFIG["model_provider"] = provider_value
-                # Set default model for the selected provider
-                if provider_value == "huggingface":
-                    GLOBAL_CONFIG["model"] = "mistralai/Mixtral-8x7B-Instruct-v0.1"
-                else:
-                    GLOBAL_CONFIG["model"] = "llama2"
-            
-            if provider_value == "huggingface":
-                model = st.text_input("HuggingFace Model", 
-                                    value=GLOBAL_CONFIG["model"],
-                                    key="hf_model_input")
                 
-                # Apply Changes button - disabled initially, enabled on changes
-                if st.button("Apply Changes", key="apply_hf", disabled=not st.session_state.button_enabled):
-                    GLOBAL_CONFIG["model"] = model
-                    st.session_state["model_changed"] = f"Using HuggingFace model: {model}"
-                    st.query_params["model_provider"] = "huggingface"
-                    st.query_params["model"] = model
-                    # Disable button after click
-                    st.session_state.button_enabled = False
-                    # Update last provider
-                    st.session_state.last_provider = provider_value
-                    st.rerun()
-            else:
-                model = st.text_input("Ollama Model", 
-                                    value=GLOBAL_CONFIG["model"],
-                                    key="model_input")
+                # Get provider config - ensure we're using the correct provider
+                provider_config = model_registry.get_provider(provider_value)
                 
-                # Apply Changes button - disabled initially, enabled on changes
-                if st.button("Apply Changes", key="apply_ollama", disabled=not st.session_state.button_enabled):
-                    GLOBAL_CONFIG["model"] = model
-                    st.session_state["model_changed"] = f"Using Ollama model: {model}"
-                    st.query_params["model_provider"] = "ollama"
-                    st.query_params["model"] = model
-                    # Disable button after click
-                    st.session_state.button_enabled = False
-                    # Update last provider
-                    st.session_state.last_provider = provider_value
-                    st.rerun()
+                # Get model and collection from provider config
+                model = provider_config.default_model
+                collection = provider_config.collection_name
+                
+                print(f"Run: Using model '{model}' from provider '{provider_value}' with collection '{collection}'")
+                
+                # Update global config with model and collection from provider
+                GLOBAL_CONFIG["model"] = model
+                GLOBAL_CONFIG["collection"] = collection
+                
+                # Show confirmation message
+                message_placeholder.success(f"Using {provider_value} provider with model: {model}")
+                
+                # Update last provider
+                st.session_state.last_provider = provider_value
+                
+                # Update session state
+                st.session_state["initial_config"] = {
+                    "provider": provider_value
+                }
+                
+                # Flag that we need to create a new QA system on next question
+                st.session_state["need_new_qa_system"] = True
             
+            # Display current model and collection (read-only)
+            try:
+                provider_config = model_registry.get_provider(provider_value)
+                model = provider_config.default_model
+                collection = provider_config.collection_name
+                st.text(f"Current model: {model}")
+                st.text(f"Collection: {collection}")
+            except:
+                st.text(f"Current model: {GLOBAL_CONFIG['model']}")
+                st.text(f"Collection: {GLOBAL_CONFIG.get('collection', 'unknown')}")
+            
+        # Error message area
+        error_placeholder = st.empty()
+        
         question = st.text_input("Enter your question:", placeholder="Type your question here...")
         
         col1, col2 = st.columns([1, 4])
         with col1:
             submit = st.button("Get Answer", type="primary")        
+            
         if submit and question.strip():
+            # Create a progress placeholder that can be updated
+            progress_placeholder = st.empty()
+            
             with st.spinner("Generating answer..."):
                 try:
-                    # Create a new QA system with the current global config
-                    config = QAConfig(
-                        model_provider=GLOBAL_CONFIG["model_provider"],
-                        model=GLOBAL_CONFIG["model"]
-                    )
-                    qa_system = QASystem(config)
-                    response = qa_system.answer(question)
+                    # Check if we need to create a new QA system
+                    need_new_system = 'qa_system' not in st.session_state or st.session_state.get("need_new_qa_system", False)
+                    
+                    if need_new_system:
+                        # Create config with just the provider - it will get the model from provider config
+                        config = QAConfig(
+                            model_provider=GLOBAL_CONFIG["model_provider"]
+                        )
+                        st.session_state.qa_system = QASystem(config)
+                        # Reset the flag
+                        st.session_state["need_new_qa_system"] = False
+                    
+                    # Get answer from QA system
+                    response = st.session_state.qa_system.answer(question)
+                    
+                    # Check if search was aborted
+                    if response == "Search aborted due to model provider change.":
+                        error_placeholder.warning("Search aborted: Model provider was changed")
+                        return
+                        
+                    # Add to chat history
                     st.session_state.chat_history.append({"question": question, "answer": response})
+                    
+                    # Show error if needed
                     if response.startswith("Error: Ollama server not available"):
-                        st.error(response)
+                        error_placeholder.error(response)
+                    
                 except Exception as e:
+                    # Check if search was aborted
+                    if st.session_state.get("abort_search", False):
+                        st.session_state["abort_search"] = False
+                        error_placeholder.warning("Search aborted: Model provider was changed")
+                        return
+                        
                     if "Connection refused" in str(e) and GLOBAL_CONFIG["model_provider"] == "ollama":
                         error_msg = f"Error: Ollama server not available. Please check if the server is running."
-                        st.error(error_msg)
+                        error_placeholder.error(error_msg)
                     else:
-                        st.error(f"Error: {str(e)}")
+                        error_placeholder.error(f"Error: {str(e)}")
         elif submit:
             st.warning("⚠️ Please enter a question first.")
             
@@ -363,81 +506,103 @@ class UI:
         
         st.markdown("---\n*Powered by LangChain and Milvus*")
 
+def reset_registry():
+    """Reset the model registry to defaults"""
+    from config import model_registry
+    # Reset to defaults
+    model_registry.reset_to_defaults()
+    # Delete config file to force reload
+    if model_registry.CONFIG_FILE.exists():
+        model_registry.CONFIG_FILE.unlink()
+    # Reload default providers
+    model_registry._load_default_providers()
+    return model_registry
+
 def main():
     # Parse command line arguments
     args = parse_args()
     
     # Set global config from command line args
     global GLOBAL_CONFIG
+    from config import model_registry
     
-    # Button state is initialized in UI._setup()
+    # Reset registry to ensure correct defaults
+    model_registry = reset_registry()
     
-    # Initialize from environment variables first
-    model_provider_env = os.getenv("MODEL_PROVIDER")
-    model_env = os.getenv("MODEL_HF")
+    # Print debug info
+    print(model_registry.debug_info())
     
-    if model_provider_env:
-        GLOBAL_CONFIG["model_provider"] = model_provider_env
-    else:
-        GLOBAL_CONFIG["model_provider"] = os.getenv("MILVUS_HF_COLLECTION_NAME", "demo_collection")
-    
-    if model_env:
-        GLOBAL_CONFIG["model"] = model_env
-    else:
-        GLOBAL_CONFIG["model"] = "mistralai/Mixtral-8x7B-Instruct-v0.1"
-    
-    # Command line args override environment variables
-    if args.model_provider:
-        GLOBAL_CONFIG["model_provider"] = args.model_provider
+    # Check if we already have a QA system in session state
+    if 'qa_system' not in st.session_state:
+        # First time initialization
+        provider_value = args.model_provider if args.model_provider else ModelProvider.OLLAMA.value
         
-    if args.model:
-        GLOBAL_CONFIG["model"] = args.model
-    elif args.model_provider:
-        # Set appropriate default model if only provider is specified
-        GLOBAL_CONFIG["model"] = "llama2" if args.model_provider == "ollama" else "mistralai/Mixtral-8x7B-Instruct-v0.1"
+        # Command line args have highest priority
+        GLOBAL_CONFIG["model_provider"] = provider_value
         
-    # Store initial config in session state for persistence
-    if 'streamlit.runtime.scriptrunner' in sys.modules:
+        # Check URL parameters
+        query_params = st.query_params
+        if "model_provider" in query_params:
+            GLOBAL_CONFIG["model_provider"] = query_params["model_provider"]
+        
+        # Get provider config - ensure we're using the correct provider
+        provider_config = model_registry.get_provider(GLOBAL_CONFIG["model_provider"])
+        
+        # Get model and collection from provider config
+        model = provider_config.default_model
+        collection = provider_config.collection_name
+        
+        print(f"Using model '{model}' from provider '{GLOBAL_CONFIG['model_provider']}' with collection '{collection}'")
+        
+        # Update global config with model and collection from provider
+        GLOBAL_CONFIG["model"] = model
+        GLOBAL_CONFIG["collection"] = collection
+        
+        # Store provider in session state for persistence
         st.session_state["initial_config"] = {
-            "provider": GLOBAL_CONFIG["model_provider"],
-            "model": GLOBAL_CONFIG["model"]
+            "provider": GLOBAL_CONFIG["model_provider"]
         }
+        
+        # Create config based on global config
+        config = QAConfig(
+            model_provider=GLOBAL_CONFIG["model_provider"]
+        )
+        
+        # Initialize UI
+        ui = UI(config)
+        st.session_state['ui'] = ui
+    else:
+        # Use existing UI from session state
+        ui = st.session_state['ui']
     
-    # Create config based on global config
-    config = QAConfig(
-        model_provider=GLOBAL_CONFIG["model_provider"],
-        model=GLOBAL_CONFIG["model"]
-    )
-    
-    # Initialize and run UI
-    ui = UI(config)
+    # Run UI
     ui.run()
 
 def parse_args():
     """Parse command line arguments"""
-    parser = argparse.ArgumentParser(description="Milvus QA System")
-    parser.add_argument(
-        "--model-provider", 
-        type=str, 
-        choices=[p.value for p in ModelProvider], 
-        default=None,
-        help="Model provider to use"
-    )
-    parser.add_argument(
-        "--model", 
-        type=str,
-        default=None, 
-        help="Model name to use"
-    )
-    # When running with streamlit, we need to parse only the args after --
-    if 'streamlit.runtime.scriptrunner' in sys.modules:
-        if '--' in sys.argv:
-            idx = sys.argv.index('--')
-            args = parser.parse_args(sys.argv[idx+1:])
-        else:
-            args = parser.parse_args([])
-    else:
-        args = parser.parse_args()
+    # Create a simple namespace object
+    class Args:
+        pass
+    
+    args = Args()
+    args.model_provider = None
+    
+    # Simple direct parsing for model_provider
+    for i, arg in enumerate(sys.argv):
+        # Handle --model-provider=value format
+        if arg.startswith("--model-provider=") or arg.startswith("--model_provider="):
+            args.model_provider = arg.split("=", 1)[1]
+            break
+        # Handle --model-provider value format
+        elif (arg == "--model-provider" or arg == "--model_provider") and i + 1 < len(sys.argv):
+            args.model_provider = sys.argv[i + 1]
+            break
+    
+    # Validate model_provider if provided
+    if args.model_provider and args.model_provider not in [p.value for p in ModelProvider]:
+        print(f"Warning: Invalid model_provider '{args.model_provider}'. Using default.")
+        args.model_provider = None
+    
     return args
 
 if __name__ == "__main__":
