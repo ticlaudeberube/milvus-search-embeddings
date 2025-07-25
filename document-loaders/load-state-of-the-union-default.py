@@ -13,8 +13,11 @@ import pandas as pd
 from sklearn.manifold import TSNE
 import numpy as np
 
-sys.path.insert(1, './utils')
-from MilvusUtils import MilvusUtils
+from dotenv import load_dotenv
+load_dotenv()
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from core.MilvusUtils import MilvusUtils
 
 client = MilvusUtils.get_client()
 collection="state_of_the_union_default"  # Name of the collection to be created
@@ -29,19 +32,19 @@ def embed_text(text):
 
 def load():
     # Building the Vector Database
-    filename = 'state_of_the_union.txt'
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    filename = os.path.join(script_dir, 'state_of_the_union.txt')
     url = 'https://raw.githubusercontent.com/IBM/watson-machine-learning-samples/master/cloud/data/foundation_models/state_of_the_union.txt'
-
 
     if not os.path.isfile(filename):
         wget.download(url, out=filename)
 
     # Split the document into chunks
-    loader = TextLoader(filename)
+    loader = TextLoader(filename, encoding='utf-8')
     documents = loader.load()
 
     # This is a long document we can split up.
-    with open(f"./{filename}") as f:
+    with open(filename, encoding='utf-8') as f:
         documents = f.read()
 
     text_splitter = RecursiveCharacterTextSplitter(
@@ -86,7 +89,7 @@ def search(query):
     # print(f"Response: {response}")
     cprint(f'\nDone Searching!:\n\n {response}\n', 'green', attrs=['blink'])
 
-# load()
+load()
 query = "What did the president say about Ketanji Brown Jackson?"
 search(query)
 

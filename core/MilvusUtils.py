@@ -1,26 +1,32 @@
 
 from sentence_transformers import SentenceTransformer
-import os, torch, ollama
+import os
+import torch
+import ollama
+from typing import Optional, Any
 from pymilvus import MilvusClient, Collection, MilvusException, db, utility, model
 
 #Start/install Milvus container before use
-client = MilvusClient( 
+client: MilvusClient = MilvusClient( 
     uri="http://localhost:19530",
     token="root:Milvus"
 )
 
-client.use_database(os.getenv("MY_DATABASE") or "default")
+database_name: str = os.getenv("MY_DB_NAME") or "default"
+try:
+    client.use_database(database_name)  # type: ignore
+except Exception:
+    pass  # Database might not exist or method not available
 
 class MilvusUtils:
     @staticmethod
-    def get_client():
+    def get_client() -> MilvusClient:
         return client
     @staticmethod
-    def create_database(db_name):
+    def create_database(db_name: str) -> None:
         try:
             existing_databases = db.list_database()
             if db_name in existing_databases:
-                print(f"Database '{db_name}' already exists.")
 
                 # Use the database context
                 db.using_database(db_name)
@@ -42,28 +48,30 @@ class MilvusUtils:
             print(f"An error occurred: {e}")
 
     @staticmethod
-    def create_collection(collection_name: str,dimension=1536):
+    def create_collection(collection_name: str, dimension: int = 1536, metric_type="IP", consistency_level="Strong") -> None:
         if client.has_collection(collection_name=collection_name):
             client.drop_collection(collection_name=collection_name)
         client.create_collection(
             collection_name=collection_name,
             dimension=dimension,
+            metric_type=metric_type,
+            consistency_level=consistency_level
         )
     @staticmethod 
     def has_collection(collection: str) -> bool:
         return client.has_collection(collection_name=collection)
 
     @staticmethod
-    def delete_collection(collection_name: str):
+    def drop_collection(collection_name: str) -> None:
         client.drop_collection(collection_name=collection_name)
 
     @staticmethod
-    def insert_data(collection_name: str, data: list[dict]) -> dict:        
+    def insert_data(collection_name: str, data: list[dict[str, Any]]) -> dict[str, Any]:        
         res = client.insert(collection_name=collection_name, data=data)
         return res
     
     @staticmethod
-    def vectorize_documents(collection_name: str, docs: list[str]) -> list[dict, int]:
+    def vectorize_documents(collection_name: str, docs: list[str]) -> tuple[dict[str, Any], int]:
         # This will download a small embedding model "paraphrase-albert-small-v2" (~50MB).
         embedding_fn = model.DefaultEmbeddingFunction()
 
@@ -91,22 +99,26 @@ class MilvusUtils:
         return res, dimension
     
     @staticmethod
-    def embed_text_hf(sentences:list[str], model = None) -> list[float]:
-        _model =  model or os.getenv('MODEL_HF')
+    def embed_text_hf(sentences: list[str], model: Optional[str] = None) -> list[list[float]]:
+        _model = model or os.getenv('HF_EMBEDDING_MODEL')
+        if not _model:
+            raise ValueError("HF_EMBEDDING_MODEL environment variable not set")
         st = SentenceTransformer(_model)
         embeddings = st.encode(sentences, batch_size=256, show_progress_bar=True)
         return embeddings.tolist()
     
     @staticmethod
-    def embed_text_ollama(text: str, model = None) -> list[float]:
-        _model = model or os.getenv('MODEL_OLLAMA')
+    def embed_text_ollama(text: str, model: Optional[str] = None) -> list[float]:
+        _model = model or os.getenv('OLLAMA_EMBEDDING_MODEL')
+        if not _model:
+            raise ValueError("OLLAMA_EMBEDDING_MODEL environment variable not set")
         embeddings = ollama.embeddings(model=_model, prompt=text)
         return embeddings["embedding"]
 
     @staticmethod
-    def get_device():
+    def get_device() -> torch.device:
         if torch.backends.mps.is_available():
             return torch.device("mps")
         else:
-            print("⚠️ MPS not available. Falling back to CPU.")
+            print("WARNING: MPS not available. Falling back to CPU.")
             return torch.device("cpu")

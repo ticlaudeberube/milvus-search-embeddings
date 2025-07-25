@@ -4,9 +4,12 @@ import sys, os
 from termcolor import colored, cprint
 import gradio as gr
 
+from dotenv import load_dotenv
+load_dotenv()
 
-sys.path.insert(1, './utils')
-from MilvusUtils import MilvusUtils
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from core.MilvusUtils import MilvusUtils
+
 client = MilvusUtils.get_client()
 collection_name = os.getenv("MILVUS_OLLAMA_COLLECTION_NAME") or "demo_collection"
 

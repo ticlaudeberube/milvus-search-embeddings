@@ -1,9 +1,12 @@
-import os, sys
+import os,sys
+from dotenv import load_dotenv
+load_dotenv()
 from pymilvus import model
-from termcolor import colored, cprint
+from termcolor import cprint
 
-sys.path.insert(1, './utils')
-from MilvusUtils import MilvusUtils
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from pymilvus import MilvusClient
+from core.MilvusUtils import MilvusUtils
 # https://milvus.io/docs/range-search.md
 
 embedding_fn = model.DefaultEmbeddingFunction()
@@ -13,7 +16,7 @@ query_vectors = embedding_fn.encode_queries([query])
 
 collection_name = os.getenv("MY_COLLECTION_NAME") or "demo_collection"
 
-client = MilvusUtils.get_client()
+client: MilvusClient = MilvusUtils.get_client()
 # print(query_vectors[0])
 #start searching
 def search():

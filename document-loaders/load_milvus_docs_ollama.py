@@ -1,11 +1,14 @@
 # We load all markdown files from the folder milvus_docs/en/faq. For each document, we just simply use "# "
 # to separate the content in the file, which can roughly separate the content of each main part of the markdown file.
-import ollama, os, sys
+import os, sys
 from glob import glob
 from tqdm import tqdm
 
-sys.path.insert(1, './utils')
-from MilvusUtils import MilvusUtils
+from dotenv import load_dotenv
+load_dotenv()
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from core.MilvusUtils import MilvusUtils
 
 
 collection_name = os.getenv("MILVUS_OLLAMA_COLLECTION_NAME") or "demo_collection"
@@ -31,7 +34,7 @@ def process():
     text_lines = []
 
     for file_path in tqdm(glob("./document-loaders/milvus_docs/en/**/*.md", recursive=True), desc="Reading files"):
-        with open(file_path, "r") as file:
+        with open(file_path, "r", encoding="utf-8") as file:
             file_text = file.read()
 
         text_lines += file_text.split("# ")

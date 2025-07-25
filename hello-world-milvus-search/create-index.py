@@ -1,11 +1,14 @@
-import os, sys
+import os
+from dotenv import load_dotenv
+load_dotenv()
+from core.MilvusUtils import MilvusUtils
 from pymilvus import MilvusClient, DataType
-
-sys.path.insert(1, './utils')
-from MilvusUtils import MilvusUtils
-
-client = MilvusUtils.get_client()
+client: MilvusClient = MilvusUtils.get_client()
 collection_name = os.getenv("MY_COLLECTION_NAME") or "demo_collection"
+
+# Drop collection if exists and reload vectors afterward
+if MilvusUtils.has_collection(collection_name):
+    MilvusUtils.drop_collection(collection_name)
 
 schema = MilvusClient.create_schema(
     auto_id=False,
@@ -32,9 +35,12 @@ index_params.add_index(
     params={ "nlist": 128 }
 )
 
-client.create_index(
-    collection_name=collection_name,
-    index_params=index_params,
-    sync=False # Whether to wait for index creation to complete before returning. Defaults to True.
-)
-
+try:
+    client.create_index(
+        collection_name=collection_name,
+        index_params=index_params,
+        sync=False # Whether to wait for index creation to complete before returning. Defaults to True.
+    )
+    print("Index created")
+except Exception as e:
+    print(f"Error creating index: {str(e)}")

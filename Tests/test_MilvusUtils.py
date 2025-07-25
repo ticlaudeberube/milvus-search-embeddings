@@ -1,13 +1,9 @@
-
-import sys
+import pytest
 from pymilvus import MilvusException, MilvusClient, Collection
 from unittest.mock import patch, MagicMock
+from core.MilvusUtils import MilvusUtils
 
-sys.path.insert(1, './utils')
-from MilvusUtils import MilvusUtils
-
-db_name='test_db'
-# Test cases
+db_name = 'test_db'
 
 def test_get_client():
     client = MilvusUtils.get_client()
@@ -63,7 +59,7 @@ def test_create_collection():
     # Cleanup
     client.drop_collection(collection_name)
 
-def test_delete_collection():
+def test_drop_collection():
     client = MilvusUtils.get_client()
     # Test setup
     test_collection = "test_collection"
@@ -76,12 +72,12 @@ def test_delete_collection():
     assert client.has_collection(collection_name=test_collection) == True
     
     # Execute delete
-    MilvusUtils.delete_collection(test_collection)
+    MilvusUtils.drop_collection(test_collection)
     
     # Verify collection was deleted
     assert client.has_collection(collection_name=test_collection) == False
-def test_insert_data() -> dict:
 
+def test_insert_data():
     # Test data
     test_collection = "test_collection"
     test_data = [
@@ -101,9 +97,9 @@ def test_insert_data() -> dict:
     assert result["insert_count"] == 2
     
     # Cleanup
-    MilvusUtils.delete_collection(test_collection)
+    MilvusUtils.drop_collection(test_collection)
 
-def test_vectorize_documents() -> dict:
+def test_vectorize_documents():
     # Test setup
     collection_name = "test_collection"
     test_docs = ["This is a test document", "This is another test document"]
@@ -113,18 +109,15 @@ def test_vectorize_documents() -> dict:
     
     try:
         # Call function being tested
-        result = MilvusUtils.vectorize_documents(collection_name, test_docs)
+        result, dim = MilvusUtils.vectorize_documents(collection_name, test_docs)
         
         # Assertions
         assert isinstance(result, dict), "Result should be a dictionary"
         assert "insert_count" in result, "Result should contain insert_count"
         assert result["insert_count"] == len(test_docs), "Insert count should match number of docs"
-        
-        # Verify data was inserted correctly
-        assert result['insert_count']== len(test_docs), "Collection should contain all inserted docs"
+        assert isinstance(dim, int), "Dimension should be an integer"
         
     finally:
         # Cleanup
-        MilvusUtils.delete_collection(collection_name)
-        return result
+        MilvusUtils.drop_collection(collection_name)
 

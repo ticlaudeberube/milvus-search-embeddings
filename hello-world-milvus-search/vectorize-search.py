@@ -1,10 +1,8 @@
-import os
-import sys
+from dotenv import load_dotenv
+load_dotenv()
+from core.MilvusUtils import MilvusUtils
 
-sys.path.insert(1, './utils')
-from MilvusUtils import MilvusUtils
-
-collection_name = os.getenv("MY_COLLECTION_NAME") or "demo_collection"
+collection_name = "demo_collection"
 
 documents = [
     "Artificial intelligence was founded as an academic discipline in 1956.",

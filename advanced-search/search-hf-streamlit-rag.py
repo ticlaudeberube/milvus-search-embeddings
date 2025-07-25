@@ -1,10 +1,18 @@
 import os
+import sys
+import streamlit as st
+
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_milvus import Milvus
 from langchain_huggingface import HuggingFaceEndpoint, HuggingFaceEmbeddings
-import streamlit as st
+
+from dotenv import load_dotenv
+load_dotenv()
+
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+from core.MilvusUtils import MilvusUtils
 
 def initialize_qa_system():
     """Initialize the QA system components"""
@@ -16,7 +24,7 @@ def initialize_qa_system():
         max_new_tokens=512,
         do_sample=False,
         repetition_penalty=1.03,
-    )
+    ) # type: ignore
     
     embeddingModel = os.getenv("MODEL_HF") or "sentence-transformers/all-mpnet-base-v2"
     embeddings = HuggingFaceEmbeddings(model_name=embeddingModel)

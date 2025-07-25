@@ -4,7 +4,9 @@ langchain
 langchain_community
 langchain_milvus
 langchain_huggingface 
+huggingface_hub
 pymilvus
+pymilvus.model
 pytest
 pytest-cov
 termcolor
@@ -25,3 +27,6 @@ scikit-learn
 milvus-cli
 pypdf
 asyncio
+streamlit
+torch
+sentence-transformers

@@ -1,11 +1,13 @@
 .DS_Store
 my_database.db
-Tests/__pycache__/*
-__pycache__/
+**/__pycache__/*
 document-loaders/milvus_docs/**/*
 documents/*.zip
 documents/*.tar.gz
 documents/*.txt
 .coverage
 .gradio
-document-loaders/milvus_docs_2.4.x_en.zip
+document-loaders/**/*
+!document-loaders/**/*.py
+py312-env/**/*
+typings/**
