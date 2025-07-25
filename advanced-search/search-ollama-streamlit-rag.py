@@ -3,24 +3,18 @@ from langchain_core.runnables import RunnablePassthrough
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_milvus import Milvus
-from langchain_ollama.llms import OllamaLLM
-from langchain_ollama import OllamaEmbeddings
-import streamlit as st
+from langchain_ollama.llms import OllamaLLM  # type: ignore
+from langchain_ollama import OllamaEmbeddings  # type: ignore
+import streamlit as st  # type: ignore
 
 def initialize_qa_system():
     """Initialize the QA system components"""
     collection_name = os.getenv("MILVUS_OLLAMA_COLLECTION_NAME") or "demo_collection"
-    # You can use different LLM models based on your needs:
-    # - For better accuracy: OllamaLLM(model="mistral") or OllamaLLM(model="llama2")
-    # - For faster responses: OllamaLLM(model="orca-mini")
-    # - For balanced performance: OllamaLLM(model="neural-chat")
-    llm = OllamaLLM(model="llama2")    
-    # You can use other embedding models depending on your needs:
-    # - For better accuracy: OllamaEmbeddings(model="mistral") or OllamaEmbeddings(model="llama2")
-    # - For faster performance: OllamaEmbeddings(model="nomic-embed-text")
-    # - For balanced performance: OllamaEmbeddings(model="neural-chat")
-    ollamaEmbeddingModel = os.getenv("MODEL_OLLAMA") or "llama3.2"
-    embeddings = OllamaEmbeddings(model=ollamaEmbeddingModel)
+    llm_model = os.getenv("OLLAMA_LLM_MODEL")
+    llm = OllamaLLM(model=llm_model)
+    
+    embedding_model = os.getenv("OLLAMA_EMBEDDING_MODEL")
+    embeddings = OllamaEmbeddings(model=embedding_model)
 
     vectorstore = Milvus(
         embedding_function=embeddings,

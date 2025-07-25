@@ -13,11 +13,10 @@ import pandas as pd
 from sklearn.manifold import TSNE
 import numpy as np
 
-sys.path.insert(1, './utils')
-from MilvusUtils import MilvusUtils
+from core.utils import MilvusClient
 
 
-client = MilvusUtils.get_client()
+client = MilvusClient.get_client()
 collection="state_of_the_union_ollama"  # Name of the collection to be created
 
 def load():
@@ -48,11 +47,11 @@ def load():
     # Populate the vector database
     data = []
     for i, line in enumerate(tqdm(docs, desc="Creating embeddings")):
-        data.append({"id": i, "vector": MilvusUtils.embed_text_ollama(line), "text": line})
+        data.append({"id": i, "vector": MilvusClient.embed_text_ollama(line), "text": line})
 
     # print(data[0])
-    dimension= len(MilvusUtils.embed_text_ollama(docs[0]))
-    MilvusUtils.create_collection(
+    dimension= len(MilvusClient.embed_text_ollama(docs[0]))
+    MilvusClient.create_collection(
         collection_name=collection, dimension=dimension
     )
 
@@ -68,7 +67,7 @@ def search(query: str):
     cprint('\nSearching..\n', 'green', attrs=['blink'])
     # Querying the Vector Database
 
-    query_vectors = MilvusUtils.embed_text_ollama(query)
+    query_vectors = MilvusClient.embed_text_ollama(query)
 
     res = client.search(
         collection_name=collection,

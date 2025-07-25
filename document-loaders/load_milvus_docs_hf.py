@@ -4,13 +4,12 @@ import torch, time, os, sys
 from glob import glob
 from tqdm import tqdm
 
-sys.path.insert(1, './utils')
-from MilvusUtils import MilvusUtils
+from core.utils import MilvusClient
 
 
 collection_name = os.getenv("MILVUS_HF_COLLECTION_NAME") or "demo_collection"
 
-client = MilvusUtils.get_client()
+client = MilvusClient.get_client()
 
 def create_collection(embedding_dim=1024):
     if client.has_collection(collection_name):
@@ -29,12 +28,15 @@ def process():
     start = time.time()
     text_lines = []
     for file_path in tqdm(glob("./document-loaders/milvus_docs/en/**/*.md", recursive=True), desc="Reading files"):
-        with open(file_path, "r") as file:
+        with open(file_path, "r", encoding="utf-8", errors="ignore") as file:
             file_text = file.read()
 
         text_lines += file_text.split("# ")
 
-    vectors =  MilvusUtils.embed_text_hf(text_lines)
+    vectors =  MilvusClient.embed_text_hf(text_lines)
+    if len(vectors) == 0:
+        print("No vectors generated. Exiting.")
+        return
     create_collection(embedding_dim=len(vectors[0]))
     data = []
     for i in range(len(vectors)):
@@ -46,5 +48,5 @@ def process():
     end = time.time()
     print(f"{device} time: {end - start:.2f} seconds")
 
-device = MilvusUtils.get_device()
+device = MilvusClient.get_device()
 process()

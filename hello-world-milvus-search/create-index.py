@@ -1,10 +1,9 @@
 import os, sys
 from pymilvus import MilvusClient, DataType
 
-sys.path.insert(1, './utils')
-from MilvusUtils import MilvusUtils
+from core.utils import MilvusClient
 
-client = MilvusUtils.get_client()
+client = MilvusClient.get_client()
 collection_name = os.getenv("MY_COLLECTION_NAME") or "demo_collection"
 
 schema = MilvusClient.create_schema(

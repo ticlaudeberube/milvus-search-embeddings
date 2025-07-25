@@ -1,8 +1,8 @@
 import os,sys
-from MilvusUtils import MilvusUtils
+from core.utils import MilvusClient
 
-client = MilvusUtils.get_client()
-# TODO: Create a function to drop a database in MilvusUtils similar 
+client = MilvusClient.get_client()
+# TODO: Create a function to drop a database in MilvusClient similar 
 # to create_database
 if __name__ == "__main__":
     

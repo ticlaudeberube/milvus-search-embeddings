@@ -13,10 +13,9 @@ import pandas as pd
 from sklearn.manifold import TSNE
 import numpy as np
 
-sys.path.insert(1, './utils')
-from MilvusUtils import MilvusUtils
+from core.utils import MilvusClient
 
-client = MilvusUtils.get_client()
+client = MilvusClient.get_client()
 collection="state_of_the_union_default"  # Name of the collection to be created
 dimension = 768
 
@@ -60,11 +59,11 @@ def load():
         data.append({"id": i, "vector": embed_text(line), "text": line})
 
 
-    MilvusUtils.create_collection(
+    MilvusClient.create_collection(
         collection_name=collection, dimension=len(text_vector)
     )
 
-    res, dim = MilvusUtils.vectorize_documents(collection, docs)
+    res, dim = MilvusClient.vectorize_documents(collection, docs)
 
     print(res['insert_count'])
 

@@ -9,8 +9,11 @@ from langchain_ollama import OllamaEmbeddings
 collection_name = os.getenv("MILVUS_OLLAMA_COLLECTION_NAME") or "demo_collection"
 question = "How is data stored in milvus?"
 
-llm = OllamaLLM(model="llama2")
-embeddings = OllamaEmbeddings(model="llama3.2")
+llm_model = os.getenv("OLLAMA_LLM_MODEL")
+embedding_model = os.getenv("OLLAMA_EMBEDDING_MODEL")
+
+llm = OllamaLLM(model=llm_model)
+embeddings = OllamaEmbeddings(model=embedding_model)
 
 docs = [] # add docs from loader
 

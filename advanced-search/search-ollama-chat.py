@@ -4,10 +4,9 @@ import sys, os
 from termcolor import colored, cprint
 
 
-sys.path.insert(1, './utils')
-from MilvusUtils import MilvusUtils
+from core.utils import MilvusClient
 
-client = MilvusUtils.get_client()
+client = MilvusClient.get_client()
 collection_name = os.getenv("MILVUS_OLLAMA_COLLECTION_NAME") or "demo_collection"
 
 
@@ -19,7 +18,7 @@ cprint('\nPreparing...\n', 'green', attrs=['blink'])
 search_res = client.search(
     collection_name=collection_name,
     data=[
-        MilvusUtils.embed_text_ollama(question)
+        MilvusClient.embed_text_ollama(question)
     ],
     limit=3,  # Return top 3 results
     search_params={"metric_type": "IP", "params": {}},  # Inner product distance
@@ -55,8 +54,9 @@ context = "\n".join(
 def rag_query():
     print('\nUser prompt:\n'+ USER_PROMPT)
     cprint(f"Searching... {question}\n", 'green', attrs=['blink'])
+    llm_model = os.getenv("OLLAMA_LLM_MODEL")
     response: ChatResponse = chat(
-        model="llama3.2",
+        model=llm_model,
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": USER_PROMPT},

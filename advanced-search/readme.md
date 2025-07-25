@@ -1,6 +1,6 @@
 
 ## Milvus RAG Search Demo 
-This ddmeo will search Milvus Documentation.
+This demo will search Milvus Documentation.
 - Set db_name, collection_name in envs file and run:
 
     ```$ . ./environments/set-envs.sh```
@@ -16,10 +16,9 @@ This ddmeo will search Milvus Documentation.
     ```
 
 - Run:
-  ```
-        $ python advanced-search-rag/search-[hr|ollama]-gradio-chat.py
+     ```
+        $ streamlit run advanced-search/search-rag-streamlit.py
     ```
-    
     ```
-        $ streamlit run  advanced-search-rag/search-[hf|ollama]-streamlit-rag.py
+        $ streamlit run advanced-search/search-rag-streamlit.py -- --model-provider=huggingface
     ```

@@ -1,6 +1,5 @@
-import os
-from pymilvus import MilvusClient, client
-from MilvusUtils import MilvusUtils
+from pymilvus import client
+from core.utils import MilvusClient
 import sys
 
 if __name__ == "__main__":
@@ -9,12 +8,12 @@ if __name__ == "__main__":
     else:
         collection_name = "demo_collection"
 
-    client = MilvusUtils.get_client()
+    client = MilvusClient.get_client()
 
     if client is not None: 
         if client.has_collection(collection_name):
-            MilvusUtils.delete_collection(collection_name)
-            print(f"Collection: {collection_name} deleted successfully.")
+            MilvusClient.drop_collection(collection_name)
+            print(f"Collection: {collection_name} dropped.")
         else:
             print(f"Collection: {collection_name} does not exist.")
     else:

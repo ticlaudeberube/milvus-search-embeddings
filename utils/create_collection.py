@@ -1,6 +1,6 @@
 import os, sys
 from pymilvus import client
-from MilvusUtils import MilvusUtils
+from core.utils import MilvusClient
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
@@ -8,13 +8,13 @@ if __name__ == "__main__":
     else:
         collection_name = "demo_collection"
 
-    client = MilvusUtils.get_client()
+    client = MilvusClient.get_client()
 
     if client is not None:
         if client.has_collection(collection_name):
             print(f"Collection: {collection_name} already exists.")
         else:
-            MilvusUtils.create_collection(collection_name)
+            MilvusClient.create_collection(collection_name)
             print(f"Collection: {collection_name} created successfully.")
     else:
         print("Milvus client is not initialized.")
