@@ -14,7 +14,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from core.MilvusUtils import MilvusUtils
 
 
-collection_name: str = os.getenv("MILVUS_HF_COLLECTION_NAME") or "demo_collection"
+collection_name: str = os.getenv("HF_COLLECTION_NAME") or "demo_collection"
 
 client = MilvusUtils.get_client()
 

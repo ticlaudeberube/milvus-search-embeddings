@@ -48,7 +48,7 @@ class MilvusUtils:
             print(f"An error occurred: {e}")
 
     @staticmethod
-    def create_collection(collection_name: str, dimension: int = 1536, metric_type="IP", consistency_level="Strong") -> None:
+    def create_collection(collection_name: str, dimension: int = 1536, metric_type="COSINE", consistency_level="Session") -> None:
         if client.has_collection(collection_name=collection_name):
             client.drop_collection(collection_name=collection_name)
         client.create_collection(

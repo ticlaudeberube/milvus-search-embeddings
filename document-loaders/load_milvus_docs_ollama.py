@@ -11,7 +11,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from core.MilvusUtils import MilvusUtils
 
 
-collection_name = os.getenv("MILVUS_OLLAMA_COLLECTION_NAME") or "demo_collection"
+collection_name = os.getenv("OLLAMA_COLLECTION_NAME") or "milvus_ollama_collection"
 
 client = MilvusUtils.get_client()
 
@@ -23,11 +23,10 @@ def create_collection(embedding_dim=1024):
     client.create_collection(
         collection_name=collection_name,
         dimension=embedding_dim,
-        metric_type="IP",  # Inner product distance
-        consistency_level="Strong",  # Supported values are (`"Strong"`, `"Session"`, `"Bounded"`, `"Eventually"`). See https://milvus.io/docs/consistency.md#Consistency-Level for more details.
+        metric_type="COSINE",  # Inner product distance
+        consistency_level="Session",  # Supported values are (`"Strong"`, `"Session"`, `"Bounded"`, `"Eventually"`). See https://milvus.io/docs/consistency.md#Consistency-Level for more details.
     )
     print(f"Collection '{collection_name}' created successfully.")
-
 
 
 def process():
@@ -36,20 +35,26 @@ def process():
     for file_path in tqdm(glob("./document-loaders/milvus_docs/en/**/*.md", recursive=True), desc="Reading files"):
         with open(file_path, "r", encoding="utf-8") as file:
             file_text = file.read()
-
         text_lines += file_text.split("# ")
 
-    
     data = []
     for i, line in enumerate(tqdm(text_lines, desc="Creating embeddings")):
-        data.append({"id": i, "vector": MilvusUtils.embed_text_ollama(line), "text": line})
-    print(data)
+        if not line.strip() or len(line.strip()) < 10:
+            continue
+            
+        try:
+            vector = MilvusUtils.embed_text_ollama(line)
+            if vector:
+                data.append({"id": len(data), "vector": vector, "text": line})
+        except Exception as e:
+            print(f"Failed to embed text chunk {i}: {e}")
+            continue
+    
     if len(data) == 0:
-        return 
+        return
+        
     dimension = len(data[0]['vector'])
-    print(dimension)
     create_collection(dimension)
-    #print(data)
     client.insert(collection_name=collection_name, data=data)
 
 process()

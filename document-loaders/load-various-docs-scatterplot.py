@@ -44,16 +44,12 @@ docs = []  # Store raw document text chunks
 
 async def load():
     """Load documents, create embeddings, and populate Milvus vector database"""
-    # Skip loading if collection already exists, but load data for visualization
+    # Check if collection already exists and has data
     if MilvusUtils.has_collection(collection_name):
-        print(f"Collection {collection_name} already exists. Loading existing data.")
-        global data
-        try:
-            all_data = client.query(collection_name, "", output_fields=["id", "vector", "text"], limit=10000)
-            data = all_data
-        except Exception as e:
-            print(f"Could not load existing data: {e}")
-        return
+        count = client.query(collection_name=collection_name, expr="", output_fields=["count(*)"])
+        if count and len(count) > 0:
+            print(f"Collection {collection_name} already exists with data. Skipping load.")
+            return
     
     # Define files to download and process
     files = {
@@ -121,8 +117,8 @@ async def load():
     MilvusUtils.create_collection(
         collection_name=collection_name, 
         dimension=dim,
-        metric_type="IP",  # Inner product distance for similarity
-        consistency_level="Strong",
+        metric_type="COSINE",  # Inner product distance for similarity
+        consistency_level="Session",
     )
         
     # Insert all embeddings into Milvus collection
@@ -146,7 +142,6 @@ def search(query) -> tuple[list, list[float]]:
         search_params={
             "params": {"radius": 0.4, "range_filter": 0.7}  # Similarity thresholds
         },
-        output_fields=["text"],
     )
 
     # Concatenate all search results into response text
@@ -225,16 +220,15 @@ async def main():
     queryUFC = "How much weight allowance is allowed in non championship fights in the UFC?"  # UFC rules query
     queryUFC310 = "Who won in the Pantoja vs Asakura fight at UFC 310?"  # UFC 310 results query
 
-    # Execute search with selected query if collection exists
-    if MilvusUtils.has_collection(collection_name):
-        query = querySoU
-        s, queryVector = search(query)
+    # Execute search with selected query
+    query = querySoU
+    s, queryVector = search(query)
     
-        # Show t-SNE plot if data is available
-        if len(data) > 0:
-            data.append({"id": len(data)+1, "vector": queryVector, "text": f"{query}"})
-            show_plot(s)
+    # Add query to data for visualization and show t-SNE plot
+    if len(data) > 0:
+        data.append({"id": len(data)+1, "vector": queryVector, "text": f"{query}"})
+        show_plot(s)
 
-if __name__ == "__main__":
-    asyncio.run(main())
+# Run the main function
+asyncio.run(main())
 
