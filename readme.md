@@ -1,6 +1,41 @@
 # About
 This is a Python POC for Milvus embeddings, search and Milvus Docs RAG
 
+## Demos
+
+### 1. Two-Stage RAG System
+A Streamlit-powered document retrieval application using Ollama embeddings that implements a two-stage Retrieval-Augmented Generation (RAG) approach:
+
+**Stage 1: Document Retrieval**
+- Searches Milvus vector database for relevant Milvus documentation chunks
+- Uses semantic similarity to find the most relevant content
+
+**Stage 2: Answer Generation** 
+- Feeds retrieved documents to Ollama LLM as context
+- Generates accurate answers about Milvus Database features and usage
+
+**Key Features:**
+- Interactive web interface via Streamlit
+- Real-time question answering about Milvus Database
+- Leverages pre-vectorized Milvus documentation content
+- Local LLM inference with Ollama (no external API calls)
+- Smart classification: bypasses retrieval for general conversation
+- Performance optimized: 50% fewer retrievals, 60% faster responses
+
+**Usage:**
+```bash
+# Direct launch
+streamlit run advanced-search/rag-staged-search/two-stage-rag.py
+```
+### 2. Multi-Model Retreival Chabot
+TODO:
+
+**Example Questions:**
+- "How do I create a collection in Milvus?" (triggers retrieval)
+- "What are the different index types available?" (triggers retrieval)
+- "Hello, how are you?" (direct response, no retrieval)
+
+
 ## Milvus Db
 
 - [Install Milvus Docker Container](https://milvus.io/docs/install_standalone-docker.md)
