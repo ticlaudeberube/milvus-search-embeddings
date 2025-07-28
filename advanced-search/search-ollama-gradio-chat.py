@@ -11,7 +11,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from core.MilvusUtils import MilvusUtils
 
 client = MilvusUtils.get_client()
-collection_name = os.getenv("MILVUS_OLLAMA_COLLECTION_NAME") or "demo_collection"
+collection_name = os.getenv("OLLAMA_COLLECTION_NAME") or "demo_collection"
 
 def embed_text(text):
     response = MilvusUtils.embed_text_ollama(text)
@@ -30,7 +30,7 @@ def rag_query(question):
             embed_text(question)
         ],
         limit=limit,
-        search_params={"metric_type": "IP", "params": {}},  # Inner product distance
+        search_params={"metric_type": "COSINE", "params": {"radius": 0.4, "range_filter": 0.7} },  # Cosine similarity
         output_fields=["text"],  # Return the text field
     )
 

@@ -1,71 +1,57 @@
 import os
-from langchain_core.runnables import RunnablePassthrough
-from langchain_core.prompts import PromptTemplate
-from langchain_core.output_parsers import StrOutputParser
-from langchain_milvus import Milvus
+import sys
 from langchain_ollama.llms import OllamaLLM
-from langchain_ollama import OllamaEmbeddings
 import streamlit as st
+
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+from core.MilvusUtils import MilvusUtils
 
 def initialize_qa_system():
     """Initialize the QA system components"""
-    collection_name = os.getenv("MILVUS_OLLAMA_COLLECTION_NAME") or "demo_collection"
-    # You can use different LLM models based on your needs:
-    # - For better accuracy: OllamaLLM(model="mistral") or OllamaLLM(model="llama2")
-    # - For faster responses: OllamaLLM(model="orca-mini")
-    # - For balanced performance: OllamaLLM(model="neural-chat")
-    llm = OllamaLLM(model="llama2")    
-    # You can use other embedding models depending on your needs:
-    # - For better accuracy: OllamaEmbeddings(model="mistral") or OllamaEmbeddings(model="llama2")
-    # - For faster performance: OllamaEmbeddings(model="nomic-embed-text")
-    # - For balanced performance: OllamaEmbeddings(model="neural-chat")
-    ollamaEmbeddingModel = os.getenv("MODEL_OLLAMA") or "llama3.2"
-    embeddings = OllamaEmbeddings(model=ollamaEmbeddingModel)
+    collection_name = os.getenv("OLLAMA_COLLECTION_NAME")
+    if not collection_name:
+        st.error('Cannot find OLLAMA_COLLECTION_NAME environment variable')
+        return None, None
+    
+    llm = OllamaLLM(model="llama2")
+    client = MilvusUtils.get_client()
+    
+    return client, llm, collection_name
 
-    vectorstore = Milvus(
-        embedding_function=embeddings,
+def rag_query(client, llm, collection_name, question):
+    """Perform RAG query using direct Milvus client"""
+    # Search for relevant documents
+    search_res = client.search(
         collection_name=collection_name,
-        drop_old=True,  # Drop the old Milvus collection if it exists
+        data=[MilvusUtils.embed_text_ollama(question)],
+        limit=5,
+        search_params={"metric_type": "COSINE", "params": {"radius": 0.4, "range_filter": 0.7}},
+        output_fields=["text"]
     )
     
-    return vectorstore, llm
+    # Extract context from search results
+    context = "\n\n".join([res["entity"]["text"] for res in search_res[0]])
+    
+    # Create prompt
+    prompt = f"""
+Human: You are an AI assistant specialized in Milvus Database Documentation. You ONLY answer questions about Milvus database. 
+If a question is not related to Milvus, respond with: "I can only answer questions about Milvus database. Please ask a Milvus-related question."
+Use the context below to provide accurate, fact-based answers about Milvus.
+ Do not include any XML tags like <response> or </response> in your answer.
 
-def create_qa_chain(vectorstore, llm):
-    """Create the question-answering chain"""
-    retriever = vectorstore.as_retriever()
-    
-    PROMPT_TEMPLATE = """
-    Human: You are an AI assistant, and provides answers to questions by using fact based and statistical information when possible.
-    Use the following pieces of information to provide a concise answer to the question enclosed in <question> tags.
-    If you don't know the answer, just say that you don't know, don't try to make up an answer.
-    <context>
-    {context}
-    </context>
+<context>
+{context}
+</context>
 
-    <question>
-    {question}
-    </question>
+<question>
+{question}
+</question>
 
-    The response should be specific and use statistics or numbers when possible.
-
-    Assistant:"""
+Assistant:"""
     
-    prompt = PromptTemplate(
-        template=PROMPT_TEMPLATE, 
-        input_variables=["context", "question"]
-    )
-    
-    def format_docs(docs):
-        return "\n\n".join(doc.page_content for doc in docs)
-    
-    rag_chain = (
-        {"context": retriever | format_docs, "question": RunnablePassthrough()}
-        | prompt
-        | llm
-        | StrOutputParser()
-    )
-    
-    return rag_chain
+    # Generate response
+    response = llm.invoke(prompt)
+    return response, len(search_res[0])
 
 def create_streamlit_ui():
     """Create the Streamlit user interface"""
@@ -79,29 +65,33 @@ def create_streamlit_ui():
     
     st.markdown("""
     ### Welcome to the Milvus Question Answering System
-    Ask any question and get AI-powered answers based on the available knowledge base.
+    Ask questions about Milvus database and get AI-powered answers. Only Milvus-related questions are accepted.
     """)
     
     # Initialize session state for chat history
     if 'chat_history' not in st.session_state:
         st.session_state.chat_history = []
     
-    question = st.text_input(
-        "Enter your question:",
-        placeholder="Type your question here...",
-        key="question_input"
-    )
-    
-    col1, col2 = st.columns([1, 4])
-    with col1:
-        submit_button = st.button("Get Answer", type="primary")
+    with st.form(key="question_form"):
+        question = st.text_input(
+            "Enter your question:",
+            placeholder="Type your question here...",
+            key="question_input"
+        )
+        
+        col1, col2 = st.columns([1, 4])
+        with col1:
+            submit_button = st.form_submit_button("Get Answer", type="primary")
     
     return question, submit_button
 
 def main():
     # Initialize system components
-    vectorstore, llm = initialize_qa_system()
-    qa_chain = create_qa_chain(vectorstore, llm)
+    result = initialize_qa_system()
+    if result is None or result[0] is None:
+        return
+    
+    client, llm, collection_name = result
     
     # Create UI
     question, submit_button = create_streamlit_ui()
@@ -111,20 +101,16 @@ def main():
         if question.strip():
             with st.spinner("Generating answer..."):
                 try:
-                    # No need to vectorize the question manually - the Milvus retriever will handle this internally
-                    # The retriever component (vectorstore.as_retriever()) automatically:
-                    # 1. Vectorizes the input question using the configured embeddings model (OllamaEmbeddings)
-                    # 2. Performs the vector similarity search in Milvus
-                    # 3. Returns the relevant documents
-                    response = qa_chain.invoke(question)
+                    response, doc_count = rag_query(client, llm, collection_name, question)
+                    st.info(f"Retrieved {doc_count} documents from knowledge base")
                     st.success("Answer generated successfully!")
                     
                     # Add to chat history
                     st.session_state.chat_history.append({"question": question, "answer": response})
                     
-                    # Display chat history
+                    # Display chat history (latest first)
                     st.markdown("### Chat History")
-                    for chat in st.session_state.chat_history:
+                    for chat in reversed(st.session_state.chat_history):
                         st.markdown(f"**Q:** {chat['question']}")
                         st.markdown(f"**A:** {chat['answer']}")
                         st.markdown("---")
@@ -136,7 +122,7 @@ def main():
     
     # Add footer
     st.markdown("---")
-    st.markdown("*Powered by LangChain and Milvus*")
+    st.markdown("*Powered by Ollama and Milvus*")
 
 if __name__ == "__main__":
     main()

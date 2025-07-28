@@ -21,7 +21,7 @@ repo_id = "mistralai/Mixtral-8x7B-Instruct-v0.1"
 llm_client = InferenceClient(model=repo_id, token=hf_token, timeout=120)
 
 client = MilvusUtils.get_client()
-collection_name = os.getenv("MILVUS_HF_COLLECTION_NAME") or "demo_collection"
+collection_name = os.getenv("HF_COLLECTION_NAME") or "demo_collection"
 
 def embed_text(text: str):
     response = MilvusUtils.embed_text_hf([text])
@@ -37,7 +37,7 @@ def rag_query(question: str, history=[]):
         collection_name=collection_name,
         data=[embed_text(question)],
         limit=limit,
-        search_params={"metric_type": "COSINE", "params": {}},
+        search_params={"metric_type": "COSINE", "params": {"radius": 0.4, "range_filter": 0.7} },
         output_fields=["text"],
     )
 

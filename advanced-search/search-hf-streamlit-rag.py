@@ -16,7 +16,7 @@ from core.MilvusUtils import MilvusUtils
 
 def initialize_qa_system():
     """Initialize the QA system components"""
-    collection_name = os.getenv("MILVUS_HF_COLLECTION_NAME") or "demo_collection"
+    collection_name = os.getenv("HF_COLLECTION_NAME") or "demo_collection"
     
     llm = HuggingFaceEndpoint(
         repo_id="mistralai/Mixtral-8x7B-Instruct-v0.1",
@@ -32,7 +32,7 @@ def initialize_qa_system():
     vectorstore = Milvus(
         embedding_function=embeddings,
         collection_name=collection_name,
-        drop_old=True,  # Drop the old Milvus collection if it exists
+        drop_old=False
     )
     
     return vectorstore, llm

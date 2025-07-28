@@ -10,7 +10,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from core.MilvusUtils import MilvusUtils
 
 client = MilvusUtils.get_client()
-collection_name = os.getenv("MILVUS_OLLAMA_COLLECTION_NAME") or "demo_collection"
+collection_name = os.getenv("OLLAMA_COLLECTION_NAME") or "demo_collection"
 
 # prepare prompt
 question = "How is data stored in milvus?"
@@ -23,7 +23,7 @@ search_res = client.search(
         MilvusUtils.embed_text_ollama(question)
     ],
     limit=3,  # Return top 3 results
-    search_params={"metric_type": "IP", "params": {}},  # Inner product distance
+    search_params={"metric_type": "COSINE", "params": {"radius": 0.4, "range_filter": 0.7} },  # Cosine similarity
     output_fields=["text"],  # Return the text field
 )
 
