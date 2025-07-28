@@ -1,6 +1,15 @@
 {
   "mcpServers": {
-     "awslabs.core-mcp-server": {
+     "milvus": {
+      "command": "python",
+      "args": ["-m", "mcp_server_milvus"],
+      "env": {
+        "MILVUS_URI": "http://localhost:19530",
+        "MILVUS_TOKEN": "",
+        "MILVUS_DB_NAME": "default"
+      }
+    },
+    "awslabs.core-mcp-server": {
       "command": "uvx",
       "args": [
         "awslabs.core-mcp-server@latest"

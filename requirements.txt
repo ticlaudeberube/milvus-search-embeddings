@@ -30,3 +30,4 @@ asyncio
 streamlit
 torch
 sentence-transformers
+mcp-server-milvus
