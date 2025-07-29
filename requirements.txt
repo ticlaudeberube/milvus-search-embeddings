@@ -30,4 +30,8 @@ asyncio
 streamlit
 torch
 sentence-transformers
+huggingface_hub[hf_xet]
 mcp-server-milvus
+requests
+html5lib
+beautifulsoup4

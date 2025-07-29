@@ -1,11 +1,11 @@
 import os,sys
-from dotenv import load_dotenv
-load_dotenv()
 from pymilvus import model
 from termcolor import cprint
+from pymilvus import MilvusClient
+from dotenv import load_dotenv
+load_dotenv()
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from pymilvus import MilvusClient
 from core.MilvusUtils import MilvusUtils
 # https://milvus.io/docs/range-search.md
 

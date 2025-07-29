@@ -1,6 +1,4 @@
-from dotenv import load_dotenv
-load_dotenv()
-from tqdm import tqdm
+
 import os, sys
 from termcolor import colored, cprint
 import gradio as gr
@@ -15,7 +13,7 @@ from core.MilvusUtils import MilvusUtils
 # Add HF token for model access
 hf_token = os.getenv("HUGGINGFACEHUB_API_TOKEN")
 if not hf_token:
-    raise ValueError("Please set HUGGINGFACE_TOKEN environment variable")
+    raise ValueError("Please set HUGGINGFACEHUB_API_TOKEN environment variable")
 
 repo_id = "mistralai/Mixtral-8x7B-Instruct-v0.1"
 llm_client = InferenceClient(model=repo_id, token=hf_token, timeout=120)
@@ -30,7 +28,21 @@ def embed_text(text: str):
 # TODO: implement history
 def rag_query(question: str, history=[]):
     limit = 10
-    cprint(f'\nRetreiving context: limit ({limit}) documents...\n', 'green', attrs=['blink'])
+    # Get embeddings for the question
+    embeddings = embed_text(question)
+    if not embeddings:
+        return "Failed to create embeddings for your question."
+    
+    try:
+        search_res = client.search(
+            collection_name=collection_name,
+            data=[embeddings],
+            limit=limit,
+            search_params={"metric_type": "IP", "params": {}},
+            output_fields=["text"],
+        )
+    except Exception as e:
+        return "Error retrieving context from Milvus."
 
     #start searching
     search_res = client.search(
@@ -45,7 +57,7 @@ def rag_query(question: str, history=[]):
         (res["entity"]["text"], res["distance"]) for res in search_res[0]
     ]
     context = "\n".join(
-        [line_with_distance[0] for line_with_distance in tqdm(retrieved_lines_with_distances, desc="Processing results")]
+        [line_with_distance[0] for line_with_distance in retrieved_lines_with_distances]
     )
 
     history_context = "\n".join([f"Human: {h[0]['text']}\nAssistant: {h[1]['text']}" for h in history[-3:]])

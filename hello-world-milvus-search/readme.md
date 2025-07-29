@@ -2,10 +2,10 @@
 ## Search Demo 
 - Set db_name, collection_name in envs file and run:
 
-    ```$ . ./search/search-envs.sh```
+    ```$ ./hello-world-milvus-search/search-envs.sh```
 - Create db
     
-    ```utils/create-db my_db```
+    ```python utils/create_db.py my_db```
 - Create collection: 
 
     ```python create-collection.py my_colletion```

@@ -20,7 +20,7 @@ cprint('\nPreparing...\n', 'green', attrs=['blink'])
 search_res = client.search(
     collection_name=collection_name,
     data=[
-        MilvusUtils.embed_text_ollama(question)
+       MilvusUtils.embed_text_ollama(question)
     ],
     limit=3,  # Return top 3 results
     search_params={"metric_type": "COSINE", "params": {"radius": 0.4, "range_filter": 0.7} },  # Cosine similarity
@@ -56,8 +56,9 @@ context = "\n".join(
 def rag_query():
     print('\nUser prompt:\n'+ USER_PROMPT)
     cprint(f"Searching... {question}\n", 'green', attrs=['blink'])
+    llm_model = os.getenv("OLLAMA_LLM_MODEL")
     response: ChatResponse = chat(
-        model="llama3.2",
+        model=llm_model,
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": USER_PROMPT},

@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "core"
+version = "0.1.0"
+description = "Python POC for Milvus embeddings, search and Milvus Docs RAG"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "pymilvus",
+    "sentence-transformers",
+    "torch",
+    "ollama"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-cov",
+    "gradio",
+    "streamlit",
+    "huggingface-hub"
+]
+
+[tool.setuptools.packages.find]
+where = ["."]

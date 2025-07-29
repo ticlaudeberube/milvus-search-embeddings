@@ -7,6 +7,21 @@ documents/*.tar.gz
 documents/*.txt
 .coverage
 .gradio
+document-loaders/*
+!document-loaders/*.py
+.conda/
+venv/
+.env
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+*.log
+
+# Package metadata (auto-generated)
+*.egg-info/
+core.egg-info/
+milvus_search_embeddings.egg-info/
 document-loaders/**/*
 !document-loaders/**/*.py
 py312-env/**/*

@@ -1,29 +1,10 @@
-#!/usr/bin/env python3
-"""
-Document Loader with Milvus Vector Database and t-SNE Visualization
-
-This script demonstrates a complete RAG (Retrieval-Augmented Generation) pipeline:
-1. Downloads various document types (TXT, PDF, HTML) if not present locally
-2. Splits documents into chunks using LangChain text splitters
-3. Creates embeddings using Ollama models
-4. Stores embeddings in Milvus vector database
-5. Performs similarity search on user queries
-6. Visualizes results using t-SNE dimensionality reduction
-
-Supported file types: TXT, PDF, HTML
-Embedding model: Ollama (default model)
-Vector database: Milvus
-Visualization: t-SNE scatter plot with matplotlib/seaborn
-"""
-
-import os
-import wget
-import sys
+import os, wget, sys
 import asyncio
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from tqdm import tqdm
-from termcolor import colored, cprint
+from termcolor import cprint
+from bs4 import BeautifulSoup
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
@@ -39,20 +20,33 @@ from core.MilvusUtils import MilvusUtils
 # Initialize Milvus client and global variables
 client = MilvusUtils.get_client()
 collection_name = "ollama_scatterplot_collection"  # Name of the collection to be created
+# To force re-embedding: client.drop_collection(collection_name)
 data = []  # Store document chunks with embeddings
 docs = []  # Store raw document text chunks
 
 async def load():
-    """Load documents, create embeddings, and populate Milvus vector database"""
-    # Check if collection already exists and has data
+    """Load documents, create embeddings, and populate Milvus vector database
+    
+    Behavior:
+    - If collection exists: Loads existing data, skips embedding
+    - If collection doesn't exist: Re-embeds documents (but uses cached downloads)
+    - To force re-embedding: Drop collection first using client.drop_collection(collection_name)
+    """
+    # Skip loading if collection already exists, but load data for visualization
     if MilvusUtils.has_collection(collection_name):
-        count = client.query(collection_name=collection_name, expr="", output_fields=["count(*)"])
-        if count and len(count) > 0:
-            print(f"Collection {collection_name} already exists with data. Skipping load.")
-            return
+        print(f"Collection {collection_name} already exists. Loading existing data.")
+        global data
+        try:
+            all_data = client.query(collection_name, "", output_fields=["id", "vector", "text"], limit=10000)
+            data = list(all_data)
+        except Exception as e:
+            print(f"Could not load existing data: {e}")
+            data = []
+        return
     
     # Define files to download and process
     files = {
+        'pantoja-vs-asakura.html': 'https://www.ufc.com/news/main-card-results-highlights-winner-interviews-ufc-310-pantoja-vs-asakura',
         'state_of_the_union.txt': 'https://raw.githubusercontent.com/IBM/watson-machine-learning-samples/master/cloud/data/foundation_models/state_of_the_union.txt',
         'Unified_Rules_MMA.pdf': 'https://media.ufc.tv/discover-ufc/Unified_Rules_MMA.pdf'
     }
@@ -78,8 +72,8 @@ async def load():
 
         # Configure text splitter for chunking documents
         text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=256,  # Size of each text chunk
-            chunk_overlap=20,  # Overlap between chunks
+            chunk_size=256,
+            chunk_overlap=20,
             length_function=len,
             is_separator_regex=False,
         )
@@ -98,10 +92,12 @@ async def load():
                     chunks = text_splitter.split_text(page.page_content)
                     docs.extend(chunks)
             case 'html':
-                # Load and split HTML files
+                # Load and split HTML files, removing markup
                 with open(filepath, 'r', encoding='utf-8') as f:
                     html_content = f.read()
-                    docs.extend(text_splitter.split_text(html_content))                        
+                    soup = BeautifulSoup(html_content, 'html.parser')
+                    clean_text = soup.get_text(separator=' ', strip=True)
+                    docs.extend(text_splitter.split_text(clean_text))                        
             case _:
                 raise ValueError(f"Unsupported file type: {filetype}")
             
@@ -116,9 +112,7 @@ async def load():
     # Create Milvus collection with appropriate settings
     MilvusUtils.create_collection(
         collection_name=collection_name, 
-        dimension=dim,
-        metric_type="COSINE",  # Inner product distance for similarity
-        consistency_level="Session",
+        dimension=dim
     )
         
     # Insert all embeddings into Milvus collection
@@ -142,6 +136,7 @@ def search(query) -> tuple[list, list[float]]:
         search_params={
             "params": {"radius": 0.4, "range_filter": 0.7}  # Similarity thresholds
         },
+        output_fields=["text"],
     )
 
     # Concatenate all search results into response text
@@ -155,7 +150,11 @@ def search(query) -> tuple[list, list[float]]:
 
 def show_plot(search_res):
     """Create t-SNE visualization of embeddings and search results"""
-    # Extract all embeddings from the data
+    if not data:
+        print("No data available for plotting")
+        return
+        
+    # Extract all embeddings from the data (including query)
     embeddings = []
     for gp in data:
         embeddings.append(gp["vector"])
@@ -165,14 +164,12 @@ def show_plot(search_res):
     tsne = TSNE(random_state=0, max_iter=1000)
     tsne_results = tsne.fit_transform(X)
 
-    # Create DataFrame with t-SNE coordinates
     df_tsne = pd.DataFrame(tsne_results, columns=["TSNE1", "TSNE2"])
 
-    # Get IDs of similar documents from search results
     similar_ids = [gp["id"] for gp in search_res[0]]
 
-    # Extract query point (last point added to data)
-    df_query = pd.DataFrame(df_tsne.iloc[-1]).T
+    # Extract query point (last point in data)
+    df_query = pd.DataFrame(df_tsne.iloc[-1:])
 
     # Filter points that are similar to the query
     similar_points = df_tsne[df_tsne.index.isin(similar_ids)]
@@ -196,18 +193,17 @@ def show_plot(search_res):
         ax=ax,
     )
 
-    # Show query point in green
     sns.scatterplot(
         data=df_query, x="TSNE1", y="TSNE2", color="green", label="Query", ax=ax
     )
 
-    # Configure plot appearance
     plt.title("Scatter plot of knowledge using t-SNE")
     plt.xlabel("TSNE1")
     plt.ylabel("TSNE2")
     plt.axis("equal")
     plt.legend()
     plt.show()
+    plt.close()
 
 async def main():
     """Main function to orchestrate document loading, searching, and visualization"""
@@ -220,15 +216,19 @@ async def main():
     queryUFC = "How much weight allowance is allowed in non championship fights in the UFC?"  # UFC rules query
     queryUFC310 = "Who won in the Pantoja vs Asakura fight at UFC 310?"  # UFC 310 results query
 
-    # Execute search with selected query
-    query = querySoU
-    s, queryVector = search(query)
+    # Execute search with selected query if collection exists
+    if MilvusUtils.has_collection(collection_name):
+        query = querySoU
+        s, queryVector = search(query)
     
-    # Add query to data for visualization and show t-SNE plot
-    if len(data) > 0:
-        data.append({"id": len(data)+1, "vector": queryVector, "text": f"{query}"})
-        show_plot(s)
+        # Show t-SNE plot if data is available
+        if len(data) > 0:
+            data.append({"id": len(data)+1, "vector": queryVector, "text": f"{query}"})
+            show_plot(s)
+            
+    print("Script completed successfully.")
+    import sys
+    sys.exit(0)
 
-# Run the main function
-asyncio.run(main())
-
+if __name__ == "__main__":
+    asyncio.run(main())
