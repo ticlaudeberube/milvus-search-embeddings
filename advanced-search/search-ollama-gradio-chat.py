@@ -4,13 +4,17 @@ import sys, os
 from termcolor import colored, cprint
 import gradio as gr
 
+from dotenv import load_dotenv
+load_dotenv()
 
-from core.utils import MilvusClient
-client = MilvusClient.get_client()
-collection_name = os.getenv("MILVUS_OLLAMA_COLLECTION_NAME") or "demo_collection"
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from core.MilvusUtils import MilvusUtils
+
+client = MilvusUtils.get_client()
+collection_name = os.getenv("OLLAMA_COLLECTION_NAME") or "demo_collection"
 
 def embed_text(text):
-    response = MilvusClient.embed_text_ollama(text)
+    response = client.embed_text_ollama(text)
     print(response[0])
     return response
 
@@ -26,7 +30,7 @@ def rag_query(question):
             embed_text(question)
         ],
         limit=limit,
-        search_params={"metric_type": "IP", "params": {}},  # Inner product distance
+        search_params={"metric_type": "COSINE", "params": {"radius": 0.4, "range_filter": 0.7} },  # Cosine similarity
         output_fields=["text"],  # Return the text field
     )
 

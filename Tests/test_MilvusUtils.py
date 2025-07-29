@@ -1,7 +1,6 @@
 
-import sys
-from pymilvus import MilvusException, MilvusClient as PyMilvusClient, Collection
-from unittest.mock import patch, MagicMock
+from pymilvus import MilvusException, MilvusClient as PyMilvusClient
+from unittest.mock import patch
 
 from core.utils import MilvusClient
 
@@ -69,8 +68,8 @@ def test_drop_collection():
     
     # Verify collection was deleted
     assert client.has_collection(collection_name=test_collection) == False
-def test_insert_data():
 
+def test_insert_data():
     # Test data
     test_collection = "test_collection"
     test_data = [

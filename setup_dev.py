@@ -8,7 +8,7 @@ def main():
     try:
         subprocess.check_call([sys.executable, "-m", "pip", "install", "-e", "."])
         print("✅ Package installed in development mode")
-        print("You can now import: from milvus_search_embeddings.utils import MilvusClient")
+        print("You can now import: from milvus_search_embeddings.utils import MilvusUtils")
     except subprocess.CalledProcessError as e:
         print(f"❌ Installation failed: {e}")
         sys.exit(1)

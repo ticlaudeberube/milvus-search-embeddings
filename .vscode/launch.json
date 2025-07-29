@@ -10,6 +10,21 @@
             "env": {
                 "PYTHONPATH": "${workspaceFolder}"
             }
+            "args": [],
+            "envFile": "${workspaceFolder}/.env"
+        },
+        {
+            "name": "Python: Streamlit",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "streamlit",
+            "args": [
+                "run",
+                "${file}",
+                "--",
+                "--model_provider=ollama"
+            ],
+            "envFile": "${workspaceFolder}/.env"
         }
     ]
 }

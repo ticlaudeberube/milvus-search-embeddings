@@ -1,6 +1,42 @@
 # Milvus Search Embeddings
 
-Python POC for Milvus embeddings, search and Milvus Docs RAG with a clean package structure.
+This is a Python POC for Milvus embedings, search and Milvus Docs RAG
+
+## Package structure.
+
+- [Install Milvus Docker Container](https://milvus.io/docs/install_standalone-docker.md)
+- Launch Milvus Docker container 
+- Access web UI: http://127.0.0.1:9091/webui/
+
+### Document folder
+Contains scripts for downloading and embed documents
+
+### Search folder
+Contains basic embedding Alan Touring search 
+
+### Utils folder
+Contains MilvusUitls custom satic class which is used by other scripts
+
+Script can be parameterized by adding a colelction_name or db_name on creation or deletion
+ 
+```$ python ./utils/create-collection.py  my_collection```
+
+## Test
+- Run pytest with coverage
+
+    ``` $ coverage run -m pytest tests/test_MilvusUtils.py ```
+
+    ``` $ coverage report -m ```
+
+## [Milvuv_cli](https://milvus.io/docs/cli_commands.md)
+- milvus_cli 
+- connect -uri http://localhost:19530
+- list databases
+- list collections
+- create database --db_name test
+- use database --db_name test
+- use database --db_name default
+- delete database --db_name test
 
 ## Environment Configuration
 
@@ -57,7 +93,7 @@ pip install -e .
 
 5. **Verify installation**:
 ```cmd
-python -c "from core.utils import MilvusClient; print('Installation successful!')"
+python -c "from core.utils import MilvusUtils; print('Installation successful!')"
 ```
 
 ### Deactivate Environment
@@ -73,7 +109,7 @@ deactivate
 milvus-search-embeddings/
 ├── core/                    # Core package (installable)
 │   └── utils/
-│       └── milvus_client.py # MilvusClient class
+│       └── milvus_utils.py # MilvusUtils class
 ├── utils/                   # Database & collection scripts
 ├── advanced-search/         # RAG and search scripts
 ├── document-loaders/        # Document processing scripts
@@ -85,16 +121,16 @@ milvus-search-embeddings/
 
 ### Import the Core Package
 ```python
-from core.utils import MilvusClient
+from core.utils import MilvusUtils 
 
 # Get client
-client = MilvusClient.get_client()
+client = MilvusUtils.get_client()
 
 # Create collection
-MilvusClient.create_collection("my_collection")
+MilvusUtils.create_collection("my_collection")
 
 # Embed text
-embeddings = MilvusClient.embed_text("Hello world", provider="ollama")
+embeddings = MilvusUtils.embed_text("Hello world", provider="ollama")
 ```
 
 ### Run Utility Scripts
@@ -160,7 +196,7 @@ use database --db_name test
 
 ## Features
 
-- ✅ **Clean package structure** with `core.utils.MilvusClient`
+- ✅ **Clean package structure** with `core.utils.MilvusUtils`
 - ✅ **Global imports** - no path manipulation needed
 - ✅ **Multiple embedding providers** (HuggingFace, Ollama)
 - ✅ **Environment management** with `.env` files and cross-platform scripts

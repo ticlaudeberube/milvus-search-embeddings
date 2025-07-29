@@ -1,23 +1,41 @@
 import os
-from dataclasses import dataclass
-from typing import Dict, List, Any, Optional
+import sys
+import streamlit as st
 
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_milvus import Milvus
 from langchain_huggingface import HuggingFaceEndpoint, HuggingFaceEmbeddings
-import streamlit as st  # type: ignore
 
+from dotenv import load_dotenv
+load_dotenv()
 
-@dataclass
-class QAConfig:
-    """Configuration for the QA system"""
-    collection_name: str = "demo_collection"
-    llm_repo_id: str = "mistralai/Mixtral-8x7B-Instruct-v0.1"
-    embedding_model: str = "sentence-transformers/all-mpnet-base-v2"
-    max_tokens: int = 512
-    drop_old_collection: bool = True
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+from core.MilvusUtils import MilvusUtils
+
+def initialize_qa_system():
+    """Initialize the QA system components"""
+    collection_name = os.getenv("HF_COLLECTION_NAME") or "demo_collection"
+    
+    llm = HuggingFaceEndpoint(
+        repo_id="mistralai/Mixtral-8x7B-Instruct-v0.1",
+        task="text-generation",
+        max_new_tokens=512,
+        do_sample=False,
+        repetition_penalty=1.03,
+    ) # type: ignore
+    
+    embeddingModel = os.getenv("MODEL_HF") or "sentence-transformers/all-mpnet-base-v2"
+    embeddings = HuggingFaceEmbeddings(model_name=embeddingModel)
+
+    vectorstore = Milvus(
+        embedding_function=embeddings,
+        collection_name=collection_name,
+        drop_old=False
+    )
+    
+    return vectorstore, llm
 
 
 class MilvusQASystem:

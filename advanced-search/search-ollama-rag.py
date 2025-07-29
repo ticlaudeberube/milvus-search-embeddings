@@ -6,14 +6,16 @@ from langchain_core.prompts import PromptTemplate
 from langchain_ollama.llms import OllamaLLM
 from langchain_ollama import OllamaEmbeddings
 
-collection_name = os.getenv("MILVUS_OLLAMA_COLLECTION_NAME") or "demo_collection"
+from dotenv import load_dotenv
+load_dotenv()
+
+collection_name = os.getenv("OLLAMA_COLLECTION_NAME") or "demo_collection"
 question = "How is data stored in milvus?"
+llm_model = os.getenv("OLLAMA_LLM_MODEL", "llama3.2")
+llm = OllamaLLM(model=llm_model )
 
-llm_model = os.getenv("OLLAMA_LLM_MODEL")
-embedding_model = os.getenv("OLLAMA_EMBEDDING_MODEL")
-
-llm = OllamaLLM(model=llm_model)
-embeddings = OllamaEmbeddings(model=embedding_model)
+embeding_model =  os.getenv("OLLAMA_EMBEDDING_MODEL", "nomic-embed-text:v1.5")
+embeddings = OllamaEmbeddings(model=embeding_model)
 
 docs = [] # add docs from loader
 

@@ -1,10 +1,8 @@
 import pytest
 import sys
 import os
-import importlib
-import subprocess
 from pathlib import Path
-from unittest.mock import patch, MagicMock, call
+from unittest.mock import patch, MagicMock
 from pymilvus import MilvusException, MilvusClient as PyMilvusClient
 
 from core.utils import MilvusClient

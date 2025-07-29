@@ -3,12 +3,14 @@ from ollama import chat, ChatResponse
 import sys, os
 from termcolor import colored, cprint
 
+from dotenv import load_dotenv
+load_dotenv()
 
-from core.utils import MilvusClient
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from core.MilvusUtils import MilvusUtils
 
-client = MilvusClient.get_client()
-collection_name = os.getenv("MILVUS_OLLAMA_COLLECTION_NAME") or "demo_collection"
-
+client = MilvusUtils.get_client()
+collection_name = os.getenv("OLLAMA_COLLECTION_NAME") or "demo_collection"
 
 # prepare prompt
 question = "How is data stored in milvus?"
@@ -18,10 +20,10 @@ cprint('\nPreparing...\n', 'green', attrs=['blink'])
 search_res = client.search(
     collection_name=collection_name,
     data=[
-        MilvusClient.embed_text_ollama(question)
+       MilvusUtils.embed_text_ollama(question)
     ],
     limit=3,  # Return top 3 results
-    search_params={"metric_type": "IP", "params": {}},  # Inner product distance
+    search_params={"metric_type": "COSINE", "params": {"radius": 0.4, "range_filter": 0.7} },  # Cosine similarity
     output_fields=["text"],  # Return the text field
 )
 

@@ -6,7 +6,6 @@ from pymilvus import MilvusException, MilvusClient
 
 # Add utils to path
 from core.utils import MilvusClient
-from MilvusClient import MilvusClient
 
 
 class TestMilvusClient:
