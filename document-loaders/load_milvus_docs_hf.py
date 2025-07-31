@@ -1,18 +1,37 @@
 # We load all markdown files from the folder milvus_docs/en/faq. For each document, we just simply use "# "
 # to separate the content in the file, which can roughly separate the content of each main part of the markdown file.
 import time
-import os, sys
+import os
 from glob import glob
 from typing import List, Dict, Any
 from tqdm import tqdm
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from core.MilvusUtils import MilvusUtils
+from dotenv import load_dotenv
+load_dotenv()
+
+from core import MilvusUtils
 
 
 collection_name: str = os.getenv("HF_COLLECTION_NAME") or "demo_collection"
 
 client = MilvusUtils.get_client()
+
+def check_collection_and_confirm():
+    """Check if collection exists and get user confirmation"""
+    if MilvusUtils.has_collection(collection_name):
+        print(f"Collection '{collection_name}' already exists.")
+        choice = input("Do you want to (d)rop and recreate, or (a)bort? [d/a]: ").lower().strip()
+        
+        if choice == 'a':
+            print("Process aborted by user.")
+            return False
+        elif choice == 'd':
+            print(f"Dropping collection '{collection_name}'...")
+            return True
+        else:
+            print("Invalid choice. Aborting.")
+            return False
+    return True
 
 def create_collection(embedding_dim=1024):
     if client.has_collection(collection_name):
@@ -28,6 +47,10 @@ def create_collection(embedding_dim=1024):
     print(f"Collection '{collection_name}' created successfully.")
     
 def process() -> None:
+    # Check collection and get user confirmation
+    if not check_collection_and_confirm():
+        return
+        
     start = time.time()
     text_lines: List[str] = []
     for file_path in tqdm(glob("./document-loaders/milvus_docs/en/**/*.md", recursive=True), desc="Reading files"):
@@ -51,5 +74,6 @@ def process() -> None:
     end = time.time()
     print(f"{device} time: {end - start:.2f} seconds")
 
-device = MilvusUtils.get_device()
-process()
+if __name__ == "__main__":
+    device = MilvusUtils.get_device()
+    process()

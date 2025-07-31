@@ -1,16 +1,22 @@
+import os
 from tqdm import tqdm
 from ollama import chat, ChatResponse
-import sys, os
-from termcolor import colored, cprint
+from termcolor import cprint
 
 from dotenv import load_dotenv
 load_dotenv()
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from core.MilvusUtils import MilvusUtils
+from core import MilvusUtils
 
 client = MilvusUtils.get_client()
 collection_name = os.getenv("OLLAMA_COLLECTION_NAME") or "demo_collection"
+
+# Check if collection exists
+if not MilvusUtils.has_collection(collection_name):
+    cprint(f"\nCollection '{collection_name}' not found!", 'red')
+    cprint("Please load data first using one of these scripts:", 'yellow')
+    cprint("  python document-loaders/load_milvus_docs_ollama.py", 'cyan')
+    exit(1)
 
 # prepare prompt
 question = "How is data stored in milvus?"
@@ -56,14 +62,14 @@ context = "\n".join(
 def rag_query():
     print('\nUser prompt:\n'+ USER_PROMPT)
     cprint(f"Searching... {question}\n", 'green', attrs=['blink'])
-    llm_model = os.getenv("OLLAMA_LLM_MODEL")
+    llm_model = os.getenv("OLLAMA_LLM_MODEL", '')
     response: ChatResponse = chat(
         model=llm_model,
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": USER_PROMPT},
-        ],
-    )
+        ]
+    ) # type: ignore
     print(response["message"]["content"])
     return
 

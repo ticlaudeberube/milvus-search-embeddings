@@ -44,9 +44,11 @@ def get_config() -> Dict[str, str]:
     setup_environment()
     
     config_keys = [
-        "MY_DB_NAME", "MILVUS_OLLAMA_COLLECTION_NAME", "EMBEDDING_PROVIDER",
-        "HF_EMBEDDING_MODEL", "HF_LLM_MODEL", "OLLAMA_LLM_MODEL", "OLLAMA_EMBEDDING_MODEL",
-        "OLLAMA_NUM_THREADS", "HUGGINGFACEHUB_API_TOKEN"
+        "MY_DB_NAME", "EMBEDDING_PROVIDER",
+        "OLLAMA_COLLECTION_NAME", "OLLAMA_LLM_MODEL", "OLLAMA_EMBEDDING_MODEL",
+        "HF_COLLECTION_NAME", "HF_LLM_MODEL", "HF_EMBEDDING_MODEL",
+        "HUGGINGFACEHUB_API_TOKEN", "OLLAMA_NUM_THREADS",
+        "MILVUS_HOST", "MILVUS_PORT"
     ]
     
     return {key: os.environ.get(key, "") for key in config_keys}

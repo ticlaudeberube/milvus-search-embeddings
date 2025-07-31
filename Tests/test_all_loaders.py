@@ -1,18 +1,12 @@
 #!/usr/bin/env python3
 """Test all document loaders to ensure they work correctly."""
 
-import os
 import sys
 import subprocess
-import traceback
 from pathlib import Path
 from typing import Dict, List, Tuple
 
-# Add project root to path
-project_root = Path(__file__).parent
-sys.path.insert(0, str(project_root))
-
-from core.utils import MilvusClient
+from core import MilvusUtils
 
 
 class LoaderTester:
@@ -26,7 +20,7 @@ class LoaderTester:
         """Setup test environment."""
         try:
             # Test Milvus connection
-            self.client = MilvusClient.get_client()
+            self.client = MilvusUtils.get_client()
             print("[OK] Milvus client connection successful")
             return True
         except Exception as e:
@@ -95,41 +89,7 @@ class LoaderTester:
             
         except Exception as e:
             return False, f"Error: {str(e)}"
-    
-    def test_state_union_default(self) -> Tuple[bool, str]:
-        """Test load-state-of-the-union-default.py"""
-        try:
-            # Run as subprocess
-            result = subprocess.run(
-                [sys.executable, "document-loaders/load-state-of-the-union-default.py"],
-                capture_output=True, text=True, timeout=600
-            )
             
-            if "insert_count" in result.stdout:
-                return True, "State of Union loaded with default embeddings"
-            else:
-                return False, f"Failed: {result.stderr or 'No insert_count in output'}"
-            
-        except Exception as e:
-            return False, f"Error: {str(e)}"
-    
-    def test_state_union_ollama(self) -> Tuple[bool, str]:
-        """Test load-state-of-the-union-ollama.py"""
-        try:
-            # Run as subprocess
-            result = subprocess.run(
-                [sys.executable, "document-loaders/load-state-of-the-union-ollama.py"],
-                capture_output=True, text=True, timeout=600
-            )
-            
-            if "insert_count" in result.stdout:
-                return True, "State of Union loaded with Ollama embeddings"
-            else:
-                return False, f"Failed: {result.stderr or 'No insert_count in output'}"
-            
-        except Exception as e:
-            return False, f"Error: {str(e)}"
-    
     def test_various_docs_ollama(self) -> Tuple[bool, str]:
         """Test load-various-docs-scatterplot.py (load only)"""
         try:
@@ -163,41 +123,7 @@ print("Load completed successfully")
             
         except Exception as e:
             return False, f"Error: {str(e)}"
-    
-    def test_various_docs_hf(self) -> Tuple[bool, str]:
-        """Test load-various-docs-scatterplot-hf.py (load only)"""
-        try:
-            # Create a test script that only runs the load function
-            test_script = '''
-import asyncio
-import sys
-sys.path.insert(0, ".")
-from load_various_docs_scatterplot_hf import load
-asyncio.run(load())
-print("Load completed successfully")
-'''
-            
-            # Write temporary test script
-            with open("document-loaders/test_load_hf_only.py", "w") as f:
-                f.write(test_script)
-            
-            # Run the test script
-            result = subprocess.run(
-                [sys.executable, "test_load_hf_only.py"],
-                capture_output=True, text=True, timeout=600, cwd="document-loaders"
-            )
-            
-            # Clean up
-            Path("document-loaders/test_load_hf_only.py").unlink(missing_ok=True)
-            
-            if "Load completed successfully" in result.stdout:
-                return True, "Various docs loaded with HuggingFace embeddings"
-            else:
-                return False, f"Failed: {result.stderr or 'Load not completed'}"
-            
-        except Exception as e:
-            return False, f"Error: {str(e)}"
-    
+        
     def run_all_tests(self) -> None:
         """Run all loader tests."""
         print("Starting Document Loader Tests\n")
@@ -210,8 +136,6 @@ print("Load completed successfully")
             ("Download Milvus Docs", self.test_download_docs),
             ("Milvus Docs (Ollama)", self.test_milvus_docs_ollama),
             ("Milvus Docs (HuggingFace)", self.test_milvus_docs_hf),
-            ("State of Union (Default)", self.test_state_union_default),
-            ("State of Union (Ollama)", self.test_state_union_ollama),
             ("Various Docs (Ollama)", self.test_various_docs_ollama),
             ("Various Docs (HuggingFace)", self.test_various_docs_hf),
         ]

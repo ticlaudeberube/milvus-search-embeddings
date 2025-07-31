@@ -9,18 +9,14 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-# Add project root to path
-project_root = Path(__file__).parent
-sys.path.insert(0, str(project_root))
-
-from core.utils import MilvusClient
+from core import MilvusUtils
 
 def test_individual_loaders():
     """Test each loader individually."""
     print("Testing Individual Document Loaders")
     print("=" * 50)
     
-    client = MilvusClient.get_client()
+    client = MilvusUtils.get_client()
     
     # Test 1: Milvus Docs with Ollama
     print("\n1. Testing Milvus Docs (Ollama)")
@@ -34,7 +30,7 @@ def test_individual_loaders():
         
         # Test embedding
         test_text = "Milvus is a vector database"
-        vector = MilvusClient.embed_text_ollama(test_text)
+        vector = MilvusUtils.embed_text_ollama(test_text)
         print(f"   [OK] Ollama embedding works (dim: {len(vector)})")
         
         # Test collection creation
@@ -42,7 +38,7 @@ def test_individual_loaders():
         if client.has_collection(collection_name):
             client.drop_collection(collection_name)
         
-        MilvusClient.create_collection(collection_name, dimension=len(vector))
+        MilvusUtils.create_collection(collection_name, dimension=len(vector))
         print(f"   [OK] Collection '{collection_name}' created")
         
         # Test data insertion
@@ -96,7 +92,7 @@ def test_individual_loaders():
         sample_docs = docs[:3]
         vectors = []
         for doc in sample_docs:
-            vector = MilvusClient.embed_text_ollama(doc)
+            vector = MilvusUtils.embed_text_ollama(doc)
             vectors.append(vector)
         
         print(f"   [OK] Created {len(vectors)} embeddings")
@@ -105,7 +101,7 @@ def test_individual_loaders():
         if client.has_collection(collection_name):
             client.drop_collection(collection_name)
         
-        MilvusClient.create_collection(collection_name, dimension=len(vectors[0]))
+        MilvusUtils.create_collection(collection_name, dimension=len(vectors[0]))
         
         data = []
         for i, (doc, vector) in enumerate(zip(sample_docs, vectors)):
@@ -116,7 +112,7 @@ def test_individual_loaders():
         
         # Test search
         query = "president"
-        query_vector = MilvusClient.embed_text_ollama(query)
+        query_vector = MilvusUtils.embed_text_ollama(query)
         search_result = client.search(
             collection_name=collection_name,
             data=[query_vector],
@@ -140,7 +136,7 @@ def test_individual_loaders():
             return
         
         test_texts = ["This is a test", "Another test sentence"]
-        vectors = MilvusClient.embed_text_hf(test_texts)
+        vectors = MilvusUtils.embed_text_hf(test_texts)
         print(f"   [OK] HF embedding works (dim: {len(vectors[0])})")
         
         # Test collection
@@ -148,7 +144,7 @@ def test_individual_loaders():
         if client.has_collection(collection_name):
             client.drop_collection(collection_name)
         
-        MilvusClient.create_collection(collection_name, dimension=len(vectors[0]))
+        MilvusUtils.create_collection(collection_name, dimension=len(vectors[0]))
         
         data = []
         for i, (text, vector) in enumerate(zip(test_texts, vectors)):
@@ -178,7 +174,7 @@ def main():
     
     # Check Milvus connection
     try:
-        client = MilvusClient.get_client()
+        client = MilvusUtils.get_client()
         print("\n[OK] Milvus connection successful")
     except Exception as e:
         print(f"\n[FAIL] Milvus connection failed: {e}")

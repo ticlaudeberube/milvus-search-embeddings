@@ -1,14 +1,13 @@
 
-import os, sys
-from termcolor import colored, cprint
+import os
+from termcolor import cprint
 import gradio as gr
 from huggingface_hub import InferenceClient
 
 from dotenv import load_dotenv
 load_dotenv()
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from core.MilvusUtils import MilvusUtils
+from core import MilvusUtils
 
 # Add HF token for model access
 hf_token = os.getenv("HUGGINGFACEHUB_API_TOKEN")
@@ -38,7 +37,7 @@ def rag_query(question: str, history=[]):
             collection_name=collection_name,
             data=[embeddings],
             limit=limit,
-            search_params={"metric_type": "IP", "params": {}},
+            search_params={"metric_type": "COSINE", "params": {"radius": 0.4, "range_filter": 0.7}},
             output_fields=["text"],
         )
     except Exception as e:

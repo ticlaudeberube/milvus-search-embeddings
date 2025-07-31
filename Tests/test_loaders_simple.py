@@ -5,10 +5,6 @@ import os
 import sys
 from pathlib import Path
 
-# Add project root to path
-project_root = Path(__file__).parent
-sys.path.insert(0, str(project_root))
-
 def test_basic_functionality():
     """Test basic functionality of loaders."""
     print("Testing Document Loaders")
@@ -16,8 +12,8 @@ def test_basic_functionality():
     
     # Test 1: Check if core utils work
     try:
-        from core.utils import MilvusClient
-        client = MilvusClient.get_client()
+        from core import MilvusUtils
+        client = MilvusUtils.get_client()
         print("[OK] Milvus client connection successful")
     except Exception as e:
         print(f"[FAIL] Milvus connection failed: {e}")
@@ -42,7 +38,7 @@ def test_basic_functionality():
     # Test Ollama embedding (if available)
     try:
         if os.getenv("OLLAMA_EMBEDDING_MODEL"):
-            vector = MilvusClient.embed_text_ollama(test_text)
+            vector = MilvusUtils.embed_text_ollama(test_text)
             print(f"[OK] Ollama embedding works (dim: {len(vector)})")
         else:
             print("[SKIP] Ollama embedding - no model configured")
@@ -52,7 +48,7 @@ def test_basic_functionality():
     # Test HuggingFace embedding (if available)
     try:
         if os.getenv("HF_EMBEDDING_MODEL"):
-            vector = MilvusClient.embed_text_hf([test_text])
+            vector = MilvusUtils.embed_text_hf([test_text])
             print(f"[OK] HuggingFace embedding works (dim: {len(vector[0])})")
         else:
             print("[SKIP] HuggingFace embedding - no model configured")
@@ -68,7 +64,7 @@ def test_basic_functionality():
             client.drop_collection(test_collection)
         
         # Create test collection
-        MilvusClient.create_collection(test_collection, dimension=384)
+        MilvusUtils.create_collection(test_collection, dimension=384)
         print("[OK] Collection creation works")
         
         # Clean up

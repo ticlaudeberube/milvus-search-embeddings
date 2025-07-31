@@ -1,11 +1,11 @@
-import os, sys
+import os
 from langchain_ollama.llms import OllamaLLM
 import streamlit as st
+
 from dotenv import load_dotenv
 load_dotenv()
 
-sys.path.append(os.path.join(os.path.dirname(__file__), '../../'))
-from core.MilvusUtils import MilvusUtils
+from core import MilvusUtils
 from rag_core import needs_retrieval, rag_query_with_retrieval, direct_response, optimized_rag_query
 
 def initialize_qa_system():

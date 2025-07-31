@@ -1,4 +1,4 @@
-import os, wget, sys
+import os, wget
 import asyncio
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -14,8 +14,7 @@ import numpy as np
 from dotenv import load_dotenv
 load_dotenv()
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from core.MilvusUtils import MilvusUtils
+from core import MilvusUtils
 
 # Initialize Milvus client and global variables
 client = MilvusUtils.get_client()

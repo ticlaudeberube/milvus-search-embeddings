@@ -1,49 +1,49 @@
-
-from pymilvus import MilvusException, MilvusClient as PyMilvusClient
+import os, sys
+from pymilvus import MilvusException, MilvusClient
 from unittest.mock import patch
 
-from core.utils import MilvusClient
+from core import MilvusUtils
 
 db_name='test_db'
 # Test cases
 
 def test_get_client():
-    client = MilvusClient.get_client()
+    client = MilvusUtils.get_client()
     assert client is not None
-    assert isinstance(client, PyMilvusClient)
+    assert isinstance(client, MilvusClient)
 
 def test_create_database_new():
     with patch('pymilvus.db.list_database') as mock_list_db:
         with patch('pymilvus.db.create_database') as mock_create_db:
             mock_list_db.return_value = []
-            MilvusClient.create_database(db_name)
+            MilvusUtils.create_database(db_name)
             mock_create_db.assert_called_once_with(db_name)
 
 def test_create_database_existing():
     with patch('pymilvus.db.list_database') as mock_list_db:
         mock_list_db.return_value = [db_name]
-        MilvusClient.create_database(db_name)
+        MilvusUtils.create_database(db_name)
         # Just verify the method runs without error when database exists
 
 def test_create_database_exception():
     with patch('pymilvus.db.list_database') as mock_list_db:
         mock_list_db.side_effect = MilvusException('Test error')
-        MilvusClient.create_database(db_name)
+        MilvusUtils.create_database(db_name)
 
 def test_create_collection():
-    client = MilvusClient.get_client()
+    client = MilvusUtils.get_client()
     # Test creating a new collection
     collection_name = "test_collection"
-    MilvusClient.create_collection(collection_name)
+    MilvusUtils.create_collection(collection_name)
     assert client.has_collection(collection_name=collection_name)
     
     # Test recreating an existing collection
-    MilvusClient.create_collection(collection_name) 
+    MilvusUtils.create_collection(collection_name) 
     assert client.has_collection(collection_name=collection_name)
     
     # Test with invalid collection name
     try:
-        MilvusClient.create_collection("")
+        MilvusUtils.create_collection("")
         assert False, "Should raise exception for empty collection name"
     except Exception:
         assert True
@@ -52,7 +52,7 @@ def test_create_collection():
     client.drop_collection(collection_name)
 
 def test_drop_collection():
-    client = MilvusClient.get_client()
+    client = MilvusUtils.get_client()
     # Test setup
     test_collection = "test_collection"
     client.create_collection(
@@ -64,7 +64,7 @@ def test_drop_collection():
     assert client.has_collection(collection_name=test_collection) == True
     
     # Execute delete
-    MilvusClient.drop_collection(test_collection)
+    MilvusUtils.drop_collection(test_collection)
     
     # Verify collection was deleted
     assert client.has_collection(collection_name=test_collection) == False
@@ -78,10 +78,10 @@ def test_insert_data():
     ]
     
     # Create test collection
-    MilvusClient.create_collection(test_collection)
+    MilvusUtils.create_collection(test_collection)
     
     # Test insert
-    result = MilvusClient.insert_data(test_collection, test_data)
+    result = MilvusUtils.insert_data(test_collection, test_data)
     
     # Verify result contains expected fields
     assert isinstance(result, dict)
@@ -89,7 +89,7 @@ def test_insert_data():
     assert result["insert_count"] == 2
     
     # Cleanup
-    MilvusClient.drop_collection(test_collection)
+    MilvusUtils.drop_collection(test_collection)
 
 def test_vectorize_documents():
     # Test setup
@@ -97,23 +97,22 @@ def test_vectorize_documents():
     test_docs = ["This is a test document", "This is another test document"]
     
     # Delete collection if it exists to ensure clean state
-    if MilvusClient.has_collection(collection_name):
-        MilvusClient.drop_collection(collection_name)
+    client = MilvusUtils.get_client()
+    if client.has_collection(collection_name):
+        client.drop_collection(collection_name)
     
-    result = None
     try:
         # Call function being tested - this will create the collection with correct dimensions
-        result = MilvusClient.vectorize_documents(collection_name, test_docs)
+        result, dimension = MilvusUtils.vectorize_documents(collection_name, test_docs)
         
         # Assertions
         assert isinstance(result, dict), "Result should be a dictionary"
         assert "insert_count" in result, "Result should contain insert_count"
         assert result["insert_count"] == len(test_docs), "Insert count should match number of docs"
+        assert isinstance(dimension, int), "Dimension should be an integer"
         
     finally:
         # Cleanup
-        if MilvusClient.has_collection(collection_name):
-            MilvusClient.drop_collection(collection_name)
-    
-    pass
+        if client.has_collection(collection_name):
+            client.drop_collection(collection_name)
 

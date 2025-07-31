@@ -1,14 +1,22 @@
-import os
-from dotenv import load_dotenv
-load_dotenv()
-from core.MilvusUtils import MilvusUtils
 from pymilvus import MilvusClient, DataType
-client: MilvusClient = MilvusUtils.get_client()
-collection_name = os.getenv("MY_COLLECTION_NAME") or "demo_collection"
+from dotenv import load_dotenv
 
-# Drop collection if exists and reload vectors afterward
-if MilvusUtils.has_collection(collection_name):
-    MilvusUtils.drop_collection(collection_name)
+from core import MilvusUtils
+
+load_dotenv()
+
+# Constants
+COLLECTION_NAME: str = "hello_world_collection"
+VECTOR_DIM: int = 5
+NLIST_PARAM: int = 128
+MAX_TEXT_LENGTH: int = 65535
+
+client: MilvusClient = MilvusUtils.get_client()
+
+# Drop collection if exists
+if client.has_collection(COLLECTION_NAME):
+    client.drop_collection(COLLECTION_NAME)
+    print(f"Dropped existing collection: {COLLECTION_NAME}")
 
 schema = MilvusClient.create_schema(
     auto_id=False,
@@ -16,14 +24,16 @@ schema = MilvusClient.create_schema(
 )
 
 schema.add_field(field_name="id", datatype=DataType.INT64, is_primary=True)
-schema.add_field(field_name="vector", datatype=DataType.FLOAT_VECTOR, dim=5)
-schema.add_field(field_name="text", datatype=DataType.VARCHAR, max_length=65535)
+schema.add_field(field_name="vector", datatype=DataType.FLOAT_VECTOR, dim=VECTOR_DIM)
+schema.add_field(field_name="text", datatype=DataType.VARCHAR, max_length=MAX_TEXT_LENGTH)
 schema.add_field(field_name="metadata", datatype=DataType.JSON)
 
-client.create_collection(
-    collection_name=collection_name, 
-    schema=schema, 
-)
+try:
+    client.create_collection(collection_name=COLLECTION_NAME, schema=schema)
+    print(f"Collection '{COLLECTION_NAME}' created successfully")
+except Exception as e:
+    print(f"Error creating collection: {e}")
+    exit(1)
 
 index_params = MilvusClient.prepare_index_params()
 
@@ -32,15 +42,16 @@ index_params.add_index(
     metric_type="COSINE",
     index_type="IVF_FLAT",
     index_name="vector_index",
-    params={ "nlist": 128 }
+    params={"nlist": NLIST_PARAM}
 )
 
 try:
     client.create_index(
-        collection_name=collection_name,
+        collection_name=COLLECTION_NAME,
         index_params=index_params,
-        sync=False # Whether to wait for index creation to complete before returning. Defaults to True.
+        sync=False
     )
-    print("Index created")
+    print(f"Index created for collection: {COLLECTION_NAME}")
 except Exception as e:
-    print(f"Error creating index: {str(e)}")
+    print(f"Error creating index: {e}")
+    exit(1)

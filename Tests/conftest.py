@@ -1,10 +1,6 @@
 import pytest
 import sys
-import os
-from unittest.mock import MagicMock, patch
-
-# Add utils to Python path
-from core.utils import MilvusClient
+from unittest.mock import MagicMock
 
 @pytest.fixture
 def mock_milvus_client():

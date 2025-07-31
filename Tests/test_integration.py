@@ -3,13 +3,11 @@ import sys
 import os
 from unittest.mock import patch, MagicMock
 
-# Add utils to path
-from core.utils import MilvusClient
-from MilvusClient import MilvusClient
+from core import MilvusUtils
 
 
 class TestMilvusIntegration:
-    """Integration tests for MilvusClient (requires running Milvus instance)"""
+    """Integration tests for MilvusUtils (requires running Milvus instance)"""
 
     @pytest.mark.integration
     def test_full_workflow(self):
@@ -18,8 +16,9 @@ class TestMilvusIntegration:
         
         try:
             # Create collection
-            MilvusClient.create_collection(collection_name, dimension=768)
-            assert MilvusClient.has_collection(collection_name)
+            MilvusUtils.create_collection(collection_name, dimension=768)
+            client = MilvusUtils.get_client()
+            assert client.has_collection(collection_name)
             
             # Insert test data
             test_data = [
@@ -27,13 +26,14 @@ class TestMilvusIntegration:
                 {"id": 2, "vector": [0.2] * 768, "text": "test document 2", "subject": "test"}
             ]
             
-            result = MilvusClient.insert_data(collection_name, test_data)
+            result = MilvusUtils.insert_data(collection_name, test_data)
             assert result["insert_count"] == 2
             
         finally:
             # Cleanup
-            if MilvusClient.has_collection(collection_name):
-                MilvusClient.drop_collection(collection_name)
+            client = MilvusUtils.get_client()
+            if client.has_collection(collection_name):
+                client.drop_collection(collection_name)
 
     @pytest.mark.integration
     @patch('pymilvus.model.DefaultEmbeddingFunction')
@@ -43,22 +43,27 @@ class TestMilvusIntegration:
         
         # Setup mock embedding function
         mock_embedding = MagicMock()
-        mock_embedding.encode_documents.return_value = [[0.1] * 768, [0.2] * 768]
+        import numpy as np
+        mock_vector1 = np.array([0.1] * 768)
+        mock_vector2 = np.array([0.2] * 768)
+        mock_embedding.encode_documents.return_value = [mock_vector1, mock_vector2]
         mock_embedding.dim = 768
         mock_embedding_fn.return_value = mock_embedding
         
         try:
             docs = ["Test document 1", "Test document 2"]
-            result, dimension = MilvusClient.vectorize_documents(collection_name, docs)
+            result, dimension = MilvusUtils.vectorize_documents(collection_name, docs)
             
             assert dimension == 768
             assert result["insert_count"] == 2
-            assert MilvusClient.has_collection(collection_name)
+            client = MilvusUtils.get_client()
+            assert client.has_collection(collection_name)
             
         finally:
             # Cleanup
-            if MilvusClient.has_collection(collection_name):
-                MilvusClient.drop_collection(collection_name)
+            client = MilvusUtils.get_client()
+            if client.has_collection(collection_name):
+                client.drop_collection(collection_name)
 
     @pytest.mark.integration
     def test_database_operations(self):
@@ -67,10 +72,10 @@ class TestMilvusIntegration:
         
         try:
             # Create database
-            MilvusClient.create_database(test_db)
+            MilvusUtils.create_database(test_db)
             
             # Verify database exists
-            client = MilvusClient.get_client()
+            client = MilvusUtils.get_client()
             databases = client.list_databases()
             assert test_db in databases
             

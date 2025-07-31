@@ -3,8 +3,10 @@ import sys
 from langchain_ollama.llms import OllamaLLM
 import streamlit as st
 
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-from core.MilvusUtils import MilvusUtils
+from dotenv import load_dotenv
+load_dotenv()
+
+from core import MilvusUtils
 
 def initialize_qa_system():
     """Initialize the QA system components"""
@@ -34,10 +36,9 @@ def rag_query(client, llm, collection_name, question):
     
     # Create prompt
     prompt = f"""
-Human: You are an AI assistant specialized in Milvus Database Documentation. You ONLY answer questions about Milvus database. 
-If a question is not related to Milvus, respond with: "I can only answer questions about Milvus database. Please ask a Milvus-related question."
-Use the context below to provide accurate, fact-based answers about Milvus.
- Do not include any XML tags like <response> or </response> in your answer.
+Human: You are an AI assistant specialized in Milvus Database Documentation. 
+Use the context below to provide accurate, fact-based answers about Milvus database.
+If you cannot find relevant information in the context, say "I don't have enough information to answer that question."
 
 <context>
 {context}

@@ -1,19 +1,14 @@
 """
 This script vectorizes a list of documents and inserts them into a Milvus collection.
-
-Usage:
-    Set the environment variable MY_COLLECTION_NAME to specify the collection name, or it defaults to 'demo_collection'.
-    The script uses MilvusClient from the utils directory.
 """
 
-import os
-import sys
+from typing import List
+from core import MilvusUtils
 
-from core.utils import MilvusClient
+# Constants
+COLLECTION_NAME: str = "hello_world_collection"
 
-collection_name = os.getenv("MY_COLLECTION_NAME") or "demo_collection"
-
-documents = [
+DOCUMENTS: List[str] = [
     "Artificial intelligence was founded as an academic discipline in 1956.",
     "Alan Turing was the first person to conduct substantial research in AI.",
     "Born in Maida Vale, London, Turing was raised in southern England.",
@@ -21,4 +16,13 @@ documents = [
     "He never lived in Turing city",
 ]
 
-MilvusClient.vectorize_documents(collection_name, documents)
+def main() -> None:
+    """Vectorize documents and insert into Milvus collection."""
+    try:
+        MilvusUtils.vectorize_documents(COLLECTION_NAME, DOCUMENTS)
+        print(f"Successfully vectorized {len(DOCUMENTS)} documents into {COLLECTION_NAME}")
+    except Exception as e:
+        print(f"Error vectorizing documents: {e}")
+
+if __name__ == "__main__":
+    main()

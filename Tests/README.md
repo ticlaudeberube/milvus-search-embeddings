@@ -11,16 +11,27 @@ This directory contains comprehensive unit tests for the `core` package componen
 
 ## Running Tests
 
-### Unit Tests Only (Recommended)
+### Prerequisites
 ```bash
-# Run all unit tests
+# Install package in development mode
+pip install -e .
+
+# Install test dependencies
+pip install pytest pytest-cov
+```
+
+### Unit Tests
+```bash
+# Run specific test file
 pytest Tests/test_utils.py -v
+pytest Tests/test_utils_updated.py -v
+pytest Tests/test_MilvusUtils.py -v
+
+# Run all unit tests
+pytest Tests/ -v
 
 # Run with coverage
 pytest Tests/test_utils.py --cov=core --cov-report=term-missing
-
-# Using the test runner script
-python run_tests.py
 ```
 
 ### Integration Tests (Requires Milvus)
@@ -29,16 +40,19 @@ python run_tests.py
 docker run -d --name milvus -p 19530:19530 -p 9091:9091 milvusdb/milvus:latest
 
 # Run integration tests
-pytest Tests/test_integration.py -m integration -v
-```
-
-### All Tests
-```bash
-# Run all tests (unit + integration)
-pytest Tests/ -v
+pytest Tests/test_integration.py -v
 
 # Skip integration tests
 pytest Tests/ -m "not integration" -v
+```
+
+### Document Loader Tests
+```bash
+# Run loader tests (requires environment setup)
+pytest Tests/test_utils.py::TestDocumentLoaders -v
+
+# Skip slow tests
+pytest Tests/ -m "not slow" -v
 ```
 
 ## Test Coverage
@@ -69,7 +83,7 @@ The tests cover:
 
 Tests use the refactored import:
 ```python
-from core.utils import MilvusClient
+from core import MilvusUtils
 ```
 
 ## Dependencies

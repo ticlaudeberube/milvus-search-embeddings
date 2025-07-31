@@ -1,5 +1,6 @@
 # Python
 - you should test with pytest
+- Use snake_case as default file name and folder convention
 - NEVER remove or modify existing test cases unless explicitly requested
 - Keep all validation tests that verify current behavior
 - When modifying code, ensure existing tests still pass

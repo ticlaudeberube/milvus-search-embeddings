@@ -101,10 +101,7 @@ The following document loaders are tested:
 1. **download_milvus_docs.py** - Downloads Milvus documentation
 2. **load_milvus_docs_ollama.py** - Loads Milvus docs with Ollama embeddings
 3. **load_milvus_docs_hf.py** - Loads Milvus docs with HuggingFace embeddings
-4. **load-state-of-the-union-ollama.py** - Loads State of Union with Ollama
-5. **load-state-of-the-union-default.py** - Loads State of Union with default embeddings
-6. **load-various-docs-scatterplot.py** - Loads various docs with Ollama (with visualization)
-7. **load-various-docs-scatterplot-hf.py** - Loads various docs with HuggingFace (with visualization)
+4. **load-various-docs-scatterplot.py** - Loads various docs with Ollama (with visualization)
 
 ## Notes
 

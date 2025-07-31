@@ -1,40 +1,49 @@
-import os,sys
-from pymilvus import model
+import os
+from typing import List
+from pymilvus import model, MilvusClient
 from termcolor import cprint
-from pymilvus import MilvusClient
 from dotenv import load_dotenv
+
+from core import MilvusUtils
+
 load_dotenv()
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from core.MilvusUtils import MilvusUtils
-# https://milvus.io/docs/range-search.md
+# Constants
+QUERY: str = "Who is Alan Turing?"
+SEARCH_LIMIT: int = 3
+RADIUS: float = 0.4
+RANGE_FILTER: float = 0.6
+OUTPUT_FIELDS: List[str] = ["text", "subject"]
 
 embedding_fn = model.DefaultEmbeddingFunction()
-notFoundQuery = "Who is Victor Hugo?"
-query = "Who is Alan Turing?"
-query_vectors = embedding_fn.encode_queries([query])
-
-collection_name = os.getenv("MY_COLLECTION_NAME") or "demo_collection"
-
+query_vectors = embedding_fn.encode_queries([QUERY])
+collection_name: str = os.getenv("MY_COLLECTION_NAME") or "demo_collection"
 client: MilvusClient = MilvusUtils.get_client()
-# print(query_vectors[0])
-#start searching
-def search():
-    cprint('\nSearching..\n', 'green', attrs=['blink'])
-    res = client.search(
-        collection_name=collection_name,  # target collection
-        data=query_vectors,  # query vectors
-        limit=3,  # number of returned entities
-        anns_field="vector",
-        search_params={"metric_type": "COSINE", "params": {"radius": 0.4, "range_filter": 0.6}},
-        output_fields=["text", "subject"],  # specifies fields to be returned
-    )
-    #print(res)
-    response = ''
-    for r in res[0]:
-        response += f"{r["entity"]["text"]} "
 
-    print(f"Found ({len(res[0])}) results: {response}")
-    cprint('\nSearch Complete.\n', 'green', attrs=['blink'])
+def search() -> None:
+    """Perform range search on Milvus collection."""
+    cprint('\nSearching...\n', 'green', attrs=['blink'])
+    
+    try:
+        res = client.search(
+            collection_name=collection_name,
+            data=query_vectors,
+            limit=SEARCH_LIMIT,
+            anns_field="vector",
+            search_params={
+                "metric_type": "COSINE", 
+                "params": {"radius": RADIUS, "range_filter": RANGE_FILTER}
+            },
+            output_fields=OUTPUT_FIELDS,
+        )
+        
+        response: str = ' '.join(r["entity"]["text"] for r in res[0])
+        print(f"Found ({len(res[0])}) results: {response}")
+        
+    except Exception as e:
+        print(f"Search error: {e}")
+    finally:
+        cprint('\nSearch Complete.\n', 'green', attrs=['blink'])
 
-search()
+if __name__ == "__main__":
+    search()

@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Test what happens when environment variables are missing."""
-import os
-from core.utils import MilvusClient
+import sys, os
+
+from core import MilvusUtils
 
 # Clear environment variables to test missing scenarios
 test_vars = ['HF_EMBEDDING_MODEL', 'OLLAMA_EMBEDDING_MODEL', 'EMBEDDING_PROVIDER']
@@ -17,7 +18,7 @@ print("Testing missing environment variables...\n")
 try:
     # Test HuggingFace with missing HF_EMBEDDING_MODEL
     print("1. Testing HuggingFace with missing HF_EMBEDDING_MODEL:")
-    result = MilvusClient.embed_text("test", provider='huggingface')
+    result = MilvusUtils.embed_text("test", provider='huggingface')
     print(f"   Result: {len(result)} dimensions")
 except Exception as e:
     print(f"   ERROR: {e}")
@@ -25,7 +26,7 @@ except Exception as e:
 try:
     # Test Ollama with missing OLLAMA_EMBEDDING_MODEL
     print("2. Testing Ollama with missing OLLAMA_EMBEDDING_MODEL:")
-    result = MilvusClient.embed_text("test", provider='ollama')
+    result = MilvusUtils.embed_text("test", provider='ollama')
     print(f"   Result: {len(result)} dimensions")
 except Exception as e:
     print(f"   ERROR: {e}")
@@ -33,7 +34,7 @@ except Exception as e:
 try:
     # Test deprecated method with missing MODEL_OLLAMA
     print("3. Testing deprecated embed_text_ollama with missing MODEL_OLLAMA:")
-    result = MilvusClient.embed_text_ollama("test")
+    result = MilvusUtils.embed_text_ollama("test")
     print(f"   Result: {len(result)} dimensions")
 except Exception as e:
     print(f"   ERROR: {e}")

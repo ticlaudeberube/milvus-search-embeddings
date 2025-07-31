@@ -1,20 +1,22 @@
-from tqdm import tqdm
-from ollama import chat, ChatResponse
-import sys, os
-from termcolor import colored, cprint
+
+
+import os
 import gradio as gr
+from tqdm import tqdm
+from termcolor import cprint
+from ollama import chat, ChatResponse
+
 
 from dotenv import load_dotenv
 load_dotenv()
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from core.MilvusUtils import MilvusUtils
+from core import MilvusUtils
 
 client = MilvusUtils.get_client()
 collection_name = os.getenv("OLLAMA_COLLECTION_NAME") or "demo_collection"
 
 def embed_text(text):
-    response = client.embed_text_ollama(text)
+    response = MilvusUtils.embed_text_ollama(text)
     print(response[0])
     return response
 
@@ -55,13 +57,13 @@ def rag_query(question):
     </question>
     """
     cprint('\nSearching...\n', 'green', attrs=['blink'])
-    llm_model = os.getenv("OLLAMA_LLM_MODEL")
+    llm_model = os.getenv("OLLAMA_LLM_MODEL", 'llama3.2')
     response: ChatResponse = chat(
         model=llm_model,
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": USER_PROMPT},
-        ],  
+        ] 
     )
     print(response["message"]["content"])
     cprint('\nDone! \n', 'green', attrs=['blink'])

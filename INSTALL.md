@@ -28,7 +28,7 @@ python -m milvus_search_embeddings.utils.create_collection my_collection
 
 Import the utilities in your scripts:
 ```python
-from core.MilvusUtils import MilvusUtils
+from core import MilvusUtils
 
 # Use the utilities
 client = MilvusUtils.get_client()

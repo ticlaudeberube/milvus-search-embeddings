@@ -93,7 +93,7 @@ pip install -e .
 
 5. **Verify installation**:
 ```cmd
-python -c "from core.utils import MilvusUtils; print('Installation successful!')"
+python -c "from core import MilvusUtils; print('Installation successful!')"
 ```
 
 ### Deactivate Environment
@@ -108,8 +108,7 @@ deactivate
 ```
 milvus-search-embeddings/
 ├── core/                    # Core package (installable)
-│   └── utils/
-│       └── milvus_utils.py # MilvusUtils class
+│   └── MilvusUtils.py      # MilvusUtils class
 ├── utils/                   # Database & collection scripts
 ├── advanced-search/         # RAG and search scripts
 ├── document-loaders/        # Document processing scripts
@@ -121,7 +120,7 @@ milvus-search-embeddings/
 
 ### Import the Core Package
 ```python
-from core.utils import MilvusUtils 
+from core import MilvusUtils 
 
 # Get client
 client = MilvusUtils.get_client()
@@ -196,7 +195,7 @@ use database --db_name test
 
 ## Features
 
-- ✅ **Clean package structure** with `core.utils.MilvusUtils`
+- ✅ **Clean package structure** with `core.MilvusUtils`
 - ✅ **Global imports** - no path manipulation needed
 - ✅ **Multiple embedding providers** (HuggingFace, Ollama)
 - ✅ **Environment management** with `.env` files and cross-platform scripts
