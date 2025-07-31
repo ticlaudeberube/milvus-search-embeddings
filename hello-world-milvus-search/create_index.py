@@ -1,7 +1,7 @@
 from pymilvus import MilvusClient, DataType
 from dotenv import load_dotenv
 
-from core import MilvusUtils
+from core import get_client
 
 load_dotenv()
 
@@ -11,7 +11,7 @@ VECTOR_DIM: int = 5
 NLIST_PARAM: int = 128
 MAX_TEXT_LENGTH: int = 65535
 
-client: MilvusClient = MilvusUtils.get_client()
+client: MilvusClient = get_client()
 
 # Drop collection if exists
 if client.has_collection(COLLECTION_NAME):

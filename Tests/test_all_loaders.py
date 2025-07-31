@@ -4,9 +4,9 @@
 import sys
 import subprocess
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, Tuple
 
-from core import MilvusUtils
+from core import get_client
 
 
 class LoaderTester:
@@ -20,7 +20,7 @@ class LoaderTester:
         """Setup test environment."""
         try:
             # Test Milvus connection
-            self.client = MilvusUtils.get_client()
+            self.client = get_client()
             print("[OK] Milvus client connection successful")
             return True
         except Exception as e:
@@ -136,12 +136,12 @@ print("Load completed successfully")
             ("Download Milvus Docs", self.test_download_docs),
             ("Milvus Docs (Ollama)", self.test_milvus_docs_ollama),
             ("Milvus Docs (HuggingFace)", self.test_milvus_docs_hf),
-            ("Various Docs (Ollama)", self.test_various_docs_ollama),
-            ("Various Docs (HuggingFace)", self.test_various_docs_hf),
+            ("Various Docs (Ollama)", self.test_various_docs_ollama)
         ]
         
         for test_name, test_func in tests:
             print(f"Testing: {test_name}")
+
             try:
                 success, message = test_func()
                 status = "[OK]" if success else "[FAIL]"

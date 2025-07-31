@@ -3,7 +3,7 @@ This script vectorizes a list of documents and inserts them into a Milvus collec
 """
 
 from typing import List
-from core import MilvusUtils
+from core import vectorize_documents
 
 # Constants
 COLLECTION_NAME: str = "hello_world_collection"
@@ -19,7 +19,7 @@ DOCUMENTS: List[str] = [
 def main() -> None:
     """Vectorize documents and insert into Milvus collection."""
     try:
-        MilvusUtils.vectorize_documents(COLLECTION_NAME, DOCUMENTS)
+        vectorize_documents(COLLECTION_NAME, DOCUMENTS)
         print(f"Successfully vectorized {len(DOCUMENTS)} documents into {COLLECTION_NAME}")
     except Exception as e:
         print(f"Error vectorizing documents: {e}")

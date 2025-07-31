@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Test script for environment variables configuration."""
 import os
-from core import MilvusUtils
+from core import EmbeddingProvider
 
 def test_env_vars():
     """Test environment variable configuration."""
@@ -29,13 +29,13 @@ def test_env_vars():
     
     try:
         # Test Ollama embedding
-        print(f"[OK] Ollama embedding: {len(MilvusUtils.embed_text(test_text, provider='ollama'))} dimensions")
+        print(f"[OK] Ollama embedding: {len(EmbeddingProvider.embed_text(test_text, provider='ollama'))} dimensions")
     except Exception as e:
         print(f"[FAIL] Ollama embedding failed: {e}")
     
     try:
         # Test HuggingFace embedding
-        print(f"[OK] HuggingFace embedding: {len(MilvusUtils.embed_text(test_text, provider='huggingface'))} dimensions")
+        print(f"[OK] HuggingFace embedding: {len(EmbeddingProvider.embed_text(test_text, provider='huggingface'))} dimensions")
     except Exception as e:
         print(f"[FAIL] HuggingFace embedding failed: {e}")
 

@@ -7,16 +7,16 @@ from tqdm import tqdm
 from dotenv import load_dotenv
 load_dotenv()
 
-from core import MilvusUtils
+from core import get_client, has_collection, EmbeddingProvider
 
 
 collection_name = os.getenv("OLLAMA_COLLECTION_NAME") or "milvus_ollama_collection"
 
-client = MilvusUtils.get_client()
+client = get_client()
 
 def check_collection_and_confirm():
     """Check if collection exists and get user confirmation"""
-    if MilvusUtils.has_collection(collection_name):
+    if has_collection(collection_name):
         print(f"Collection '{collection_name}' already exists.")
         choice = input("Do you want to (d)rop and recreate, or (a)bort? [d/a]: ").lower().strip()
         
@@ -63,7 +63,7 @@ def process():
             continue
             
         try:
-            vector = MilvusUtils.embed_text_ollama(line)
+            vector = EmbeddingProvider.embed_text(line, provider='ollama')
             if vector:
                 data.append({"id": len(data), "vector": vector, "text": line})
         except Exception as e:

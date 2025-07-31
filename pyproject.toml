@@ -15,6 +15,11 @@ dependencies = [
     "ollama"
 ]
 
+[tool.pytest.ini_options]
+testpaths = ["Tests"]
+python_files = "test_*.py"
+addopts = "-v --tb=short"
+
 [project.optional-dependencies]
 dev = [
     "pytest",

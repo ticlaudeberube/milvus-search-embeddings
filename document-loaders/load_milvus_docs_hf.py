@@ -9,16 +9,16 @@ from tqdm import tqdm
 from dotenv import load_dotenv
 load_dotenv()
 
-from core import MilvusUtils
+from core import get_client, has_collection, EmbeddingProvider
 
 
 collection_name: str = os.getenv("HF_COLLECTION_NAME") or "demo_collection"
 
-client = MilvusUtils.get_client()
+client = get_client()
 
 def check_collection_and_confirm():
     """Check if collection exists and get user confirmation"""
-    if MilvusUtils.has_collection(collection_name):
+    if has_collection(collection_name):
         print(f"Collection '{collection_name}' already exists.")
         choice = input("Do you want to (d)rop and recreate, or (a)bort? [d/a]: ").lower().strip()
         
@@ -59,7 +59,7 @@ def process() -> None:
 
         text_lines += file_text.split("# ")
 
-    vectors =  MilvusUtils.embed_text_hf(text_lines)
+    vectors = EmbeddingProvider.embed_text(text_lines, provider='huggingface')
     if len(vectors) == 0:
         print("No vectors generated. Exiting.")
         return
@@ -75,5 +75,5 @@ def process() -> None:
     print(f"{device} time: {end - start:.2f} seconds")
 
 if __name__ == "__main__":
-    device = MilvusUtils.get_device()
+    device = EmbeddingProvider.get_device()
     process()

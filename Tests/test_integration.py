@@ -3,7 +3,7 @@ import sys
 import os
 from unittest.mock import patch, MagicMock
 
-from core import MilvusUtils
+from core import get_client, create_collection, insert_data, create_database, vectorize_documents
 
 
 class TestMilvusIntegration:
@@ -16,8 +16,8 @@ class TestMilvusIntegration:
         
         try:
             # Create collection
-            MilvusUtils.create_collection(collection_name, dimension=768)
-            client = MilvusUtils.get_client()
+            create_collection(collection_name, dimension=768)
+            client = get_client()
             assert client.has_collection(collection_name)
             
             # Insert test data
@@ -26,12 +26,12 @@ class TestMilvusIntegration:
                 {"id": 2, "vector": [0.2] * 768, "text": "test document 2", "subject": "test"}
             ]
             
-            result = MilvusUtils.insert_data(collection_name, test_data)
+            result = insert_data(collection_name, test_data)
             assert result["insert_count"] == 2
             
         finally:
             # Cleanup
-            client = MilvusUtils.get_client()
+            client = get_client()
             if client.has_collection(collection_name):
                 client.drop_collection(collection_name)
 
@@ -52,16 +52,16 @@ class TestMilvusIntegration:
         
         try:
             docs = ["Test document 1", "Test document 2"]
-            result, dimension = MilvusUtils.vectorize_documents(collection_name, docs)
+            result, dimension = vectorize_documents(collection_name, docs)
             
             assert dimension == 768
             assert result["insert_count"] == 2
-            client = MilvusUtils.get_client()
+            client = get_client()
             assert client.has_collection(collection_name)
             
         finally:
             # Cleanup
-            client = MilvusUtils.get_client()
+            client = get_client()
             if client.has_collection(collection_name):
                 client.drop_collection(collection_name)
 
@@ -72,10 +72,10 @@ class TestMilvusIntegration:
         
         try:
             # Create database
-            MilvusUtils.create_database(test_db)
+            create_database(test_db)
             
             # Verify database exists
-            client = MilvusUtils.get_client()
+            client = get_client()
             databases = client.list_databases()
             assert test_db in databases
             

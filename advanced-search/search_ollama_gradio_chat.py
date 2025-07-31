@@ -10,13 +10,13 @@ from ollama import chat, ChatResponse
 from dotenv import load_dotenv
 load_dotenv()
 
-from core import MilvusUtils
+from core import get_client, EmbeddingProvider
 
-client = MilvusUtils.get_client()
+client = get_client()
 collection_name = os.getenv("OLLAMA_COLLECTION_NAME") or "demo_collection"
 
 def embed_text(text):
-    response = MilvusUtils.embed_text_ollama(text)
+    response = EmbeddingProvider._embed_ollama(text)
     print(response[0])
     return response
 

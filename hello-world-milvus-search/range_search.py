@@ -4,7 +4,7 @@ from pymilvus import model, MilvusClient
 from termcolor import cprint
 from dotenv import load_dotenv
 
-from core import MilvusUtils
+from core import get_client
 
 load_dotenv()
 
@@ -17,8 +17,8 @@ OUTPUT_FIELDS: List[str] = ["text", "subject"]
 
 embedding_fn = model.DefaultEmbeddingFunction()
 query_vectors = embedding_fn.encode_queries([QUERY])
-collection_name: str = os.getenv("MY_COLLECTION_NAME") or "demo_collection"
-client: MilvusClient = MilvusUtils.get_client()
+collection_name: str = os.getenv("MY_COLLECTION_NAME") or "hello_world_collection"
+client: MilvusClient = get_client()
 
 def search() -> None:
     """Perform range search on Milvus collection."""

@@ -6,7 +6,7 @@ import streamlit as st
 from dotenv import load_dotenv
 load_dotenv()
 
-from core import MilvusUtils
+from core import get_client, EmbeddingProvider
 
 def initialize_qa_system():
     """Initialize the QA system components"""
@@ -16,7 +16,7 @@ def initialize_qa_system():
         return None, None
     
     llm = OllamaLLM(model="llama2")
-    client = MilvusUtils.get_client()
+    client = get_client()
     
     return client, llm, collection_name
 
@@ -25,7 +25,7 @@ def rag_query(client, llm, collection_name, question):
     # Search for relevant documents
     search_res = client.search(
         collection_name=collection_name,
-        data=[MilvusUtils.embed_text_ollama(question)],
+        data=[EmbeddingProvider.embed_text(question, provider='ollama')],
         limit=5,
         search_params={"metric_type": "COSINE", "params": {"radius": 0.4, "range_filter": 0.7}},
         output_fields=["text"]

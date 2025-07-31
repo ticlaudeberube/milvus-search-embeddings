@@ -14,10 +14,10 @@ import numpy as np
 from dotenv import load_dotenv
 load_dotenv()
 
-from core import MilvusUtils
+from core import get_client, EmbeddingProvider, has_collection, create_collection
 
 # Initialize Milvus client and global variables
-client = MilvusUtils.get_client()
+client = get_client()
 collection_name = "ollama_scatterplot_collection"  # Name of the collection to be created
 # To force re-embedding: client.drop_collection(collection_name)
 data = []  # Store document chunks with embeddings
@@ -32,7 +32,7 @@ async def load():
     - To force re-embedding: Drop collection first using client.drop_collection(collection_name)
     """
     # Skip loading if collection already exists, but load data for visualization
-    if MilvusUtils.has_collection(collection_name):
+    if has_collection(collection_name):
         print(f"Collection {collection_name} already exists. Loading existing data.")
         global data
         try:
@@ -102,14 +102,14 @@ async def load():
             
     # Create embeddings for each document chunk using Ollama
     for i, line in enumerate(tqdm(docs, desc="Creating (Ollama) embeddings")):
-        data.append({"id": i, "vector": MilvusUtils.embed_text_ollama(line), "text": line})
+        data.append({"id": i, "vector": EmbeddingProvider._embed_ollama(line), "text": line})
 
     # Get vector dimension from first embedding
-    text_vector = MilvusUtils.embed_text_ollama(docs[0])
+    text_vector = EmbeddingProvider._embed_ollama(docs[0])
     dim = len(text_vector)  # Typically 1024 for Ollama embeddings
     
     # Create Milvus collection with appropriate settings
-    MilvusUtils.create_collection(
+    create_collection(
         collection_name=collection_name, 
         dimension=dim
     )
@@ -125,7 +125,7 @@ async def load():
 def search(query) -> tuple[list, list[float]]:
     """Perform similarity search in Milvus and return results"""
     # Create embedding for the search query
-    query_vectors = MilvusUtils.embed_text_ollama(query)
+    query_vectors = EmbeddingProvider._embed_ollama(query)
 
     # Search for similar vectors in Milvus
     search_result = client.search(
@@ -216,7 +216,7 @@ async def main():
     queryUFC310 = "Who won in the Pantoja vs Asakura fight at UFC 310?"  # UFC 310 results query
 
     # Execute search with selected query if collection exists
-    if MilvusUtils.has_collection(collection_name):
+    if has_collection(collection_name):
         query = querySoU
         s, queryVector = search(query)
     

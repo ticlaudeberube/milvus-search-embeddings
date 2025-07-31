@@ -2,8 +2,8 @@
 """Simple test script for document loaders."""
 
 import os
-import sys
 from pathlib import Path
+from core import create_collection
 
 def test_basic_functionality():
     """Test basic functionality of loaders."""
@@ -12,8 +12,8 @@ def test_basic_functionality():
     
     # Test 1: Check if core utils work
     try:
-        from core import MilvusUtils
-        client = MilvusUtils.get_client()
+        from core import get_client
+        client = get_client()
         print("[OK] Milvus client connection successful")
     except Exception as e:
         print(f"[FAIL] Milvus connection failed: {e}")
@@ -26,7 +26,7 @@ def test_basic_functionality():
     else:
         print("[INFO] Milvus docs not found - will download")
         try:
-            from document_loaders.download_milvus_docs import download_milvus_docs
+            from document_loaders import download_milvus_docs
             download_milvus_docs()
             print("[OK] Milvus docs downloaded")
         except Exception as e:
@@ -38,7 +38,8 @@ def test_basic_functionality():
     # Test Ollama embedding (if available)
     try:
         if os.getenv("OLLAMA_EMBEDDING_MODEL"):
-            vector = MilvusUtils.embed_text_ollama(test_text)
+            from core import EmbeddingProvider
+            vector = EmbeddingProvider._embed_ollama(test_text)
             print(f"[OK] Ollama embedding works (dim: {len(vector)})")
         else:
             print("[SKIP] Ollama embedding - no model configured")
@@ -48,7 +49,8 @@ def test_basic_functionality():
     # Test HuggingFace embedding (if available)
     try:
         if os.getenv("HF_EMBEDDING_MODEL"):
-            vector = MilvusUtils.embed_text_hf([test_text])
+            from core import EmbeddingProvider
+            vector = EmbeddingProvider._embed_huggingface([test_text])
             print(f"[OK] HuggingFace embedding works (dim: {len(vector[0])})")
         else:
             print("[SKIP] HuggingFace embedding - no model configured")
@@ -64,7 +66,7 @@ def test_basic_functionality():
             client.drop_collection(test_collection)
         
         # Create test collection
-        MilvusUtils.create_collection(test_collection, dimension=384)
+        create_collection(test_collection, dimension=384)
         print("[OK] Collection creation works")
         
         # Clean up

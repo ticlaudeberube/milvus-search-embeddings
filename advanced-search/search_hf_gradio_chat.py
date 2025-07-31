@@ -7,7 +7,7 @@ from huggingface_hub import InferenceClient
 from dotenv import load_dotenv
 load_dotenv()
 
-from core import MilvusUtils
+from core import get_client, EmbeddingProvider
 
 # Add HF token for model access
 hf_token = os.getenv("HUGGINGFACEHUB_API_TOKEN")
@@ -17,11 +17,11 @@ if not hf_token:
 repo_id = "mistralai/Mixtral-8x7B-Instruct-v0.1"
 llm_client = InferenceClient(model=repo_id, token=hf_token, timeout=120)
 
-client = MilvusUtils.get_client()
+client = get_client()
 collection_name = os.getenv("HF_COLLECTION_NAME") or "demo_collection"
 
 def embed_text(text: str):
-    response = MilvusUtils.embed_text_hf([text])
+    response = EmbeddingProvider.embed_text([text], provider='huggingface')
     return response[0]  # Return the first embedding vector
 
 # TODO: implement history
