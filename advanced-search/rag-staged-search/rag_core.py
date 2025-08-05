@@ -1,101 +1,180 @@
+from typing import List, Dict, Tuple, Optional
+import time
+from langchain.prompts import PromptTemplate
+from langchain.schema.output_parser import StrOutputParser
+from core import EmbeddingProvider, get_client
 
-from core import MilvusUtils
-
-def needs_retrieval(llm, question, chat_history):
-    """Stage 1: Check if question needs document retrieval"""
-    recent_context = "\n".join([f"Q: {h['question']}" for h in chat_history[-2:]])
+class RAGCore:
+    def __init__(self, llm, collection_name: str):
+        self.llm = llm
+        self.collection_name = collection_name
+        self.response_cache = {}
+        self.classification_cache = {}
+        self._setup_chains()
     
-    classification_prompt = f"""
-        Recent conversation:
-        {recent_context}
-        
-        Current question: {question}
-        
-        Does this question ask about technical topics, database features, or need documentation?
-        Consider: if recent conversation was about technical topics, follow-up questions likely need docs too.
-        
-        Answer ONLY "YES" or "NO".
-        
-        Assistant:"""
-    
-    response = llm.invoke(classification_prompt)
-    return "YES" in response.upper()
+    def _setup_chains(self):
+        """Initialize LangChain components lazily"""
+        # Create templates but don't build chains until needed
+        self._classification_template = PromptTemplate(
+            input_variables=["question", "recent_context"],
+            template="""Does this question need Milvus documentation? Answer YES or NO.
 
-def rag_query_with_retrieval(client, llm, collection_name, question, chat_history):
-    """Stage 2: Full RAG with retrieval"""
-    search_res = client.search(
-        collection_name=collection_name,
-        data=[MilvusUtils.embed_text_ollama(question)],
-        limit=5,
-        search_params={"metric_type": "COSINE", "params": {"radius": 0.4, "range_filter": 0.7}},
-        output_fields=["text"]
-    )
-    
-    context = "\n\n".join([res["entity"]["text"] for res in search_res[0]])
-    history_context = "\n".join([f"Q: {h['question']}\nA: {h['answer']}" for h in chat_history[-3:]])
-    user_name = extract_user_name(chat_history)
-    
-    prompt = f"""
-        Human: You are an AI assistant specialized in Milvus Database Documentation.
-        Use the context below to provide accurate answers.
-        {f"The user's name is {user_name}. Address them by name." if user_name else ""}
+                Question: {question}
+
+                YES if about: Milvus, vector database, embeddings, technical details
+                NO if: greetings, thanks, off-topic, personal
+                        
+                Assistant:"""
+        )
         
-        Previous conversation:
-        {history_context}
+        self._rag_template = PromptTemplate(
+            input_variables=["context", "question"],
+            template="""Context: {context}
 
-        <context>
-        {context}
-        </context>
+                Question: {question}
 
-        <question>
-        {question}
-        </question>
-
-        Assistant:"""
-    
-    response = llm.invoke(prompt)
-    return response, len(search_res[0])
-
-def extract_user_name(chat_history):
-    """Extract user name from chat history"""
-    for chat in reversed(chat_history):
-        question_lower = chat['question'].lower()
-        if "my name is" in question_lower:
-            # Extract name after "my name is"
-            parts = question_lower.split("my name is")
-            if len(parts) > 1:
-                name_part = parts[1].strip().split('.')[0].split(',')[0].split()[0]
-                return name_part.capitalize()
-        elif "i am" in question_lower:
-            # Extract name after "i am"
-            parts = question_lower.split("i am")
-            if len(parts) > 1:
-                name_part = parts[1].strip().split('.')[0].split(',')[0].split()[0]
-                return name_part.capitalize()
-    return ""
-
-def direct_response(llm, question, chat_history):
-    """Handle questions without retrieval"""
-    history_context = "\n".join([f"Q: {h['question']}\nA: {h['answer']}" for h in chat_history[-3:]])
-    user_name = extract_user_name(chat_history)
-    
-    prompt = f"""
-        Human: You are an AI assistant for a Milvus documentation system.
-        {f"The user's name is {user_name}. Address them by name." if user_name else ""}
+                Answer:"""
+        )
         
-        Previous conversation:
-        {history_context}
+        self._direct_template = PromptTemplate(
+            input_variables=["question", "history"],
+            template="""You are a Milvus database assistant.
+            
+                History: {history}
+                Question: {question}
+                            
+                Respond naturally to greetings and Milvus-related questions. Redirect off-topic questions.
+                            
+                Answer:"""
+        )
         
-        Question: {question}
-        
-        Assistant:"""
+        # Initialize chains as None - build on first use
+        self.classification_chain = None
+        self.rag_chain = None
+        self.direct_chain = None
     
-    response = llm.invoke(prompt)
-    return response
+    def needs_retrieval(self, question: str, chat_history: List[Dict]) -> bool:
+        """Check if question needs document retrieval"""
+        start_time = time.time()
+        
+        # Quick keyword-based pre-filter for obvious non-retrieval cases
+        simple_patterns = ['hello', 'hi', 'thanks', 'thank you', 'bye', 'goodbye']
+        if any(pattern in question.lower() for pattern in simple_patterns):
+            print(f"DEBUG - Quick filter: NO DOCS (took {time.time() - start_time:.2f}s)")
+            return False
+        
+        # Check classification cache
+        cache_key = question.lower().strip()
+        if cache_key in self.classification_cache:
+            result = self.classification_cache[cache_key]
+            print(f"DEBUG - Classification cache hit: {'NEEDS DOCS' if result else 'NO DOCS'} (took {time.time() - start_time:.2f}s)")
+            return result
+        
+        # Build classification chain on first use
+        if self.classification_chain is None:
+            self.classification_chain = self._classification_template | self.llm | StrOutputParser()
+        
+        # Call LLM for classification
+        recent_context = "\n".join([f"Q: {h.get('question', '')}" for h in chat_history[-2:]])
+        llm_result = self.classification_chain.invoke({
+            "question": question,
+            "recent_context": recent_context
+        })
+        
+        needs_docs = "YES" in llm_result.upper()
+        self.classification_cache[cache_key] = needs_docs
+        print(f"DEBUG - Classification: {'NEEDS DOCS' if needs_docs else 'NO DOCS'} (took {time.time() - start_time:.2f}s)")
+        return needs_docs
+    
+    def _retrieve_documents(self, question: str) -> Tuple[str, int]:
+        """Retrieve relevant documents from Milvus"""
+        start_time = time.time()
+        client = get_client()
+        
+        # Time embedding generation
+        embed_start = time.time()
+        embedding = EmbeddingProvider.embed_text(question, provider="ollama")
+        print(f"DEBUG - Embedding took {time.time() - embed_start:.2f}s")
+        
+        # Time search
+        search_start = time.time()
+        search_results = client.search(
+            collection_name=self.collection_name,
+            data=[embedding],
+            limit=3,  # Reduced from 5 for faster search
+            search_params={"metric_type": "COSINE", "params": {"ef": 32}},  # Reduced ef from 64
+            output_fields=["text"]
+        )
+        print(f"DEBUG - Search took {time.time() - search_start:.2f}s")
+        
+        if not search_results or not search_results[0]:
+            return "", 0
+        
+        context = "\n\n".join([res["entity"]["text"] for res in search_results[0]])
+        print(f"DEBUG - Total retrieval took {time.time() - start_time:.2f}s")
+        return context, len(search_results[0])
+    
+    def rag_query_with_retrieval(self, question: str, chat_history: List[Dict]) -> Tuple[str, int]:
+        """Full RAG with document retrieval"""
+        context, doc_count = self._retrieve_documents(question)
+        
+        # Build RAG chain on first use
+        if self.rag_chain is None:
+            self.rag_chain = self._rag_template | self.llm | StrOutputParser()
+        
+        # Time LLM response
+        llm_start = time.time()
+        response = self.rag_chain.invoke({
+            "context": context,
+            "question": question
+        })
+        print(f"DEBUG - LLM response took {time.time() - llm_start:.2f}s")
+        
+        return response, doc_count
+    
+    def direct_response(self, question: str, chat_history: List[Dict]) -> str:
+        """Handle questions without retrieval"""
+        start_time = time.time()
+        
+        # Build direct chain on first use
+        if self.direct_chain is None:
+            self.direct_chain = self._direct_template | self.llm | StrOutputParser()
+        
+        # Use UI chat history instead of internal memory
+        history_text = "\n".join([f"Q: {h['question']}\nA: {h['answer']}" for h in chat_history[-3:]])
+        
+        response = self.direct_chain.invoke({
+            "question": question,
+            "history": history_text
+        })
+        
+        print(f"DEBUG - Direct response took {time.time() - start_time:.2f}s")
+        return response
+    
+    def query(self, question: str, chat_history: List[Dict]) -> Tuple[str, int]:
+        """Main query method with two-stage approach"""
+        total_start = time.time()
+        
+        # Check cache first - before any LLM calls
+        cache_key = question.lower().strip()
+        if cache_key in self.response_cache:
+            print(f"DEBUG - Cache hit! (took {time.time() - total_start:.2f}s)")
+            return self.response_cache[cache_key]
+        
+        if self.needs_retrieval(question, chat_history):
+            print("DEBUG - Using RAG with retrieval")
+            result = self.rag_query_with_retrieval(question, chat_history)
+        else:
+            print("DEBUG - Using direct response")
+            result = self.direct_response(question, chat_history), 0
+        
+        # Cache the result
+        self.response_cache[cache_key] = result
+        print(f"DEBUG - Total query time: {time.time() - total_start:.2f}s")
+        return result
 
-def optimized_rag_query(client, llm, collection_name, question, chat_history):
-    """Two-stage approach: check if retrieval needed"""
-    if not needs_retrieval(llm, question, chat_history):
-        return direct_response(llm, question, chat_history), 0
-    
-    return rag_query_with_retrieval(client, llm, collection_name, question, chat_history)
+# Backward compatibility functions
+def optimized_rag_query(client, llm, collection_name: str, question: str, chat_history: List[Dict]) -> Tuple[str, int]:
+    """Legacy interface for backward compatibility"""
+    rag_core = RAGCore(llm, collection_name)
+    return rag_core.query(question, chat_history)

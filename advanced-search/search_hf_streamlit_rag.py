@@ -1,28 +1,28 @@
 import os
 import streamlit as st
-
-from langchain_core.runnables import RunnablePassthrough
-from langchain_core.prompts import PromptTemplate
-from langchain_core.output_parsers import StrOutputParser
 from langchain_milvus import Milvus
-from langchain_huggingface import HuggingFaceEndpoint, HuggingFaceEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
+from huggingface_hub import InferenceClient
 
 from dotenv import load_dotenv
 load_dotenv()
 
-from core.MilvusUtils import MilvusUtils
+from core import has_collection, create_collection, drop_collection
 
 def initialize_qa_system():
     """Initialize the QA system components"""
     collection_name = os.getenv("HF_COLLECTION_NAME") or "demo_collection"
     
-    llm = HuggingFaceEndpoint(
-        repo_id="mistralai/Mixtral-8x7B-Instruct-v0.1",
-        task="conversational",
-        max_new_tokens=512,
-        do_sample=False,
-        repetition_penalty=1.03,
-    ) # type: ignore
+    hf_token = os.getenv("HUGGINGFACEHUB_API_TOKEN")
+    if not hf_token:
+        st.error("Please set HUGGINGFACEHUB_API_TOKEN environment variable")
+        st.stop()
+    
+    llm = InferenceClient(
+        model="mistralai/Mixtral-8x7B-Instruct-v0.1",
+        token=hf_token,
+        timeout=120
+    )
     
     embeddingModel = os.getenv("HF_EMBEDDING_MODEL") or "sentence-transformers/all-MiniLM-L6-v2"
     embeddings = HuggingFaceEmbeddings(model_name=embeddingModel)
@@ -32,9 +32,9 @@ def initialize_qa_system():
     dimension = len(test_embedding)
     
     # Recreate collection with correct dimension if needed
-    if MilvusUtils.has_collection(collection_name):
-        MilvusUtils.drop_collection(collection_name)
-    MilvusUtils.create_collection(collection_name, dimension=dimension)
+    if has_collection(collection_name):
+        drop_collection(collection_name)
+        create_collection(collection_name, dimension=dimension)
 
     vectorstore = Milvus(
         embedding_function=embeddings,
@@ -44,43 +44,24 @@ def initialize_qa_system():
     
     return vectorstore, llm
 
-def create_qa_chain(vectorstore, llm):
-    """Create the question-answering chain"""
-    retriever = vectorstore.as_retriever()
+def answer_question(question: str, vectorstore, llm):
+    """Answer question using RAG with InferenceClient"""
+    docs = vectorstore.similarity_search(question, k=5)
+    context = "\n\n".join(doc.page_content for doc in docs)
     
-    PROMPT_TEMPLATE = """
-    Human: You are an AI assistant, and provides answers to questions by using fact based and statistical information when possible.
-    Use the following pieces of information to provide a concise answer to the question enclosed in <question> tags.
-    If you don't know the answer, just say that you don't know, don't try to make up an answer.
-    Provide readable text and avoid using code blocks.
-    <context>
-    {context}
-    </context>
+    prompt = f"""Human: You are an AI assistant that provides answers using factual information.
+        Use the context below to answer the question. If you don't know, say so.
 
-    <question>
-    {question}
-    </question>
+        Context:
+        {context}
 
-    The response should be specific and use statistics or numbers when possible.
+        Question: {question}
 
-    Assistant:"""
+        Assistant:"""
     
-    prompt = PromptTemplate(
-        template=PROMPT_TEMPLATE, 
-        input_variables=["context", "question"]
-    )
-    
-    def format_docs(docs):
-        return "\n\n".join(doc.page_content for doc in docs)
-    
-    rag_chain = (
-        {"context": retriever | format_docs, "question": RunnablePassthrough()}
-        | prompt
-        | llm
-        | StrOutputParser()
-    )
-    
-    return rag_chain
+    messages = [{"role": "user", "content": prompt}]
+    response = llm.chat_completion(messages, max_tokens=512)
+    return response.choices[0].message.content
 
 def create_streamlit_ui():
     """Create the Streamlit user interface"""
@@ -116,7 +97,6 @@ def create_streamlit_ui():
 def main():
     # Initialize system components
     vectorstore, llm = initialize_qa_system()
-    qa_chain = create_qa_chain(vectorstore, llm)
     
     # Create UI
     question, submit_button = create_streamlit_ui()
@@ -131,7 +111,7 @@ def main():
                     # 1. Vectorizes the input question using the configured embeddings model (HuggingFaceEmbeddings)
                     # 2. Performs the vector similarity search in Milvus
                     # 3. Returns the relevant documents
-                    response = qa_chain.invoke(question)
+                    response = answer_question(question, vectorstore, llm)
                     st.success("Answer generated successfully!")
                     
                     # Add to chat history

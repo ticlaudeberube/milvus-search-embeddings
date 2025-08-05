@@ -13,7 +13,6 @@ load_dotenv()
 from core import get_client, EmbeddingProvider
 
 client = get_client()
-collection_name = os.getenv("OLLAMA_COLLECTION_NAME") or "demo_collection"
 
 def embed_text(text):
     response = EmbeddingProvider._embed_ollama(text)
@@ -24,7 +23,7 @@ def rag_query(question):
     limit = 10
     cprint(f'\nRetreiving context: limit ({limit}) documents...\n', 'green', attrs=['blink'])
 
-    
+    collection_name = os.getenv("MILVUS_OLLAMA_COLLECTION_NAME") or "milvus_ollama_collection"
     #start searching
     search_res = client.search(
         collection_name=collection_name,
@@ -57,7 +56,7 @@ def rag_query(question):
     </question>
     """
     cprint('\nSearching...\n', 'green', attrs=['blink'])
-    llm_model = os.getenv("OLLAMA_LLM_MODEL", 'llama3.2')
+    llm_model = os.getenv("OLLAMA_LLM_MODEL", 'llama3.2:1b')
     response: ChatResponse = chat(
         model=llm_model,
         messages=[

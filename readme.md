@@ -107,7 +107,7 @@ pip install -e .
 
 5. **Verify installation**:
 ```cmd
-python -c "from core import MilvusUtils; print('Installation successful!')"
+python -c "from core import get_client; print('Installation successful!')"
 ```
 
 ### Deactivate Environment

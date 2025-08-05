@@ -6,13 +6,13 @@ from termcolor import cprint
 from dotenv import load_dotenv
 load_dotenv()
 
-from core import MilvusUtils
+from core import get_client, has_collection, EmbeddingProvider
 
-client = MilvusUtils.get_client()
+client = get_client()
 collection_name = os.getenv("OLLAMA_COLLECTION_NAME") or "demo_collection"
 
 # Check if collection exists
-if not MilvusUtils.has_collection(collection_name):
+if not has_collection(collection_name):
     cprint(f"\nCollection '{collection_name}' not found!", 'red')
     cprint("Please load data first using one of these scripts:", 'yellow')
     cprint("  python document-loaders/load_milvus_docs_ollama.py", 'cyan')
@@ -26,7 +26,7 @@ cprint('\nPreparing...\n', 'green', attrs=['blink'])
 search_res = client.search(
     collection_name=collection_name,
     data=[
-       MilvusUtils.embed_text_ollama(question)
+       EmbeddingProvider.embed_text(question, provider='ollama')
     ],
     limit=3,  # Return top 3 results
     search_params={"metric_type": "COSINE", "params": {"radius": 0.4, "range_filter": 0.7} },  # Cosine similarity

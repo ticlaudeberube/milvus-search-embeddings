@@ -8,7 +8,7 @@ load_dotenv()
 
 sys.path.append('./advanced-search/rag-staged-search')
 
-from core import MilvusUtils
+from core import get_client
 from langchain_ollama.llms import OllamaLLM
 from rag_core import optimized_rag_query
 
@@ -17,7 +17,7 @@ def simulate_streamlit_session():
     
     # Initialize like Streamlit app
     collection_name = os.getenv("OLLAMA_COLLECTION_NAME", "milvus_ollama_collection")
-    client = MilvusUtils.get_client()
+    client = get_client()
     llm = OllamaLLM(model=os.getenv("OLLAMA_LLM_MODEL", "llama3.2"))
     
     # Simulate session_state.chat_history
