@@ -16,15 +16,10 @@ class RAGCore:
         """Initialize LangChain components lazily"""
         # Create templates but don't build chains until needed
         self._classification_template = PromptTemplate(
-            input_variables=["question", "recent_context"],
-            template="""Does this question need Milvus documentation? Answer YES or NO.
-
-                Question: {question}
-
-                YES if about: Milvus, vector database, embeddings, technical details
-                NO if: greetings, thanks, off-topic, personal
-                        
-                Assistant:"""
+            input_variables=["question"],
+            template="""Milvus question? YES/NO
+{question}
+Answer:"""
         )
         
         self._rag_template = PromptTemplate(
@@ -38,14 +33,16 @@ class RAGCore:
         
         self._direct_template = PromptTemplate(
             input_variables=["question", "history"],
-            template="""You are a Milvus database assistant.
-            
-                History: {history}
-                Question: {question}
-                            
-                Respond naturally to greetings and Milvus-related questions. Redirect off-topic questions.
-                            
-                Answer:"""
+            template="""Previous conversation:
+{history}
+
+Question: {question}
+
+If this is a greeting (hello, hi, etc.), respond with a friendly greeting and offer to help with Milvus questions.
+If asked to resume or summarize the conversation, list all the topics we discussed in detail.
+Otherwise, answer the question directly.
+
+Answer:"""
         )
         
         # Initialize chains as None - build on first use
@@ -57,11 +54,21 @@ class RAGCore:
         """Check if question needs document retrieval"""
         start_time = time.time()
         
-        # Quick keyword-based pre-filter for obvious non-retrieval cases
-        simple_patterns = ['hello', 'hi', 'thanks', 'thank you', 'bye', 'goodbye']
-        if any(pattern in question.lower() for pattern in simple_patterns):
+        # Expanded keyword-based pre-filter
+        no_docs_patterns = ['hello', 'hi', 'thanks', 'thank you', 'bye', 'goodbye', 'how are you', 'good morning', 'good afternoon', 'good evening', 'resume', 'conversation', 'chat history', 'what did we discuss', 'continue', 'summarize', 'weather', 'temperature', 'rain', 'sunny', 'cloudy']
+        docs_patterns = ['milvus', 'vector', 'database', 'collection', 'index', 'search', 'embedding', 'insert', 'query', 'schema']
+        
+        question_lower = question.lower()
+        
+        # Skip LLM if clearly greeting/social
+        if any(pattern in question_lower for pattern in no_docs_patterns):
             print(f"DEBUG - Quick filter: NO DOCS (took {time.time() - start_time:.2f}s)")
             return False
+            
+        # Skip LLM if clearly technical
+        if any(pattern in question_lower for pattern in docs_patterns):
+            print(f"DEBUG - Quick filter: NEEDS DOCS (took {time.time() - start_time:.2f}s)")
+            return True
         
         # Check classification cache
         cache_key = question.lower().strip()
@@ -74,11 +81,9 @@ class RAGCore:
         if self.classification_chain is None:
             self.classification_chain = self._classification_template | self.llm | StrOutputParser()
         
-        # Call LLM for classification
-        recent_context = "\n".join([f"Q: {h.get('question', '')}" for h in chat_history[-2:]])
+        # Simplified LLM classification with minimal context
         llm_result = self.classification_chain.invoke({
-            "question": question,
-            "recent_context": recent_context
+            "question": question
         })
         
         needs_docs = "YES" in llm_result.upper()
@@ -133,15 +138,24 @@ class RAGCore:
         return response, doc_count
     
     def direct_response(self, question: str, chat_history: List[Dict]) -> str:
-        """Handle questions without retrieval"""
+        """Handle questions without retrieval - optimized for speed"""
         start_time = time.time()
         
         # Build direct chain on first use
         if self.direct_chain is None:
             self.direct_chain = self._direct_template | self.llm | StrOutputParser()
         
-        # Use UI chat history instead of internal memory
-        history_text = "\n".join([f"Q: {h['question']}\nA: {h['answer']}" for h in chat_history[-3:]])
+        # Only include history for explicit resume/summary requests AND if history exists
+        resume_keywords = ['resume', 'summarize', 'summary', 'conversation', 'discuss', 'talked about']
+        needs_history = any(keyword in question.lower() for keyword in resume_keywords) and len(chat_history) > 0
+        
+        if needs_history:
+            history_text = "\n".join([f"Q: {h['question']}\nA: {h['answer']}" for h in chat_history[-5:]])
+            print(f"DEBUG - Including history for summary request: {len(chat_history)} items")
+            print(f"DEBUG - History text length: {len(history_text)} chars")
+        else:
+            history_text = ""
+            print(f"DEBUG - No history included for direct question")
         
         response = self.direct_chain.invoke({
             "question": question,

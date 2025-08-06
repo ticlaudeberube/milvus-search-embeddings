@@ -18,3 +18,4 @@
 - Add docstrings for classes and public methods
 - Use pathlib for file path operations instead of os.path
 - Prefer context managers (with statements) for resource handling
+- Use unicode for icons

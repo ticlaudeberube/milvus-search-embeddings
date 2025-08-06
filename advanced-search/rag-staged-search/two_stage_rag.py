@@ -1,7 +1,6 @@
 import os
 from langchain_ollama.llms import OllamaLLM
 import streamlit as st
-from concurrent.futures import ThreadPoolExecutor
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -17,7 +16,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Hide Streamlit UI elements for faster load
+# Hide Streamlit UI elements and fix button colors
 if 'ui_hidden' not in st.session_state:
     st.session_state.ui_hidden = True
     hide_streamlit_style = """
@@ -29,61 +28,61 @@ if 'ui_hidden' not in st.session_state:
     """
     st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
-@st.cache_resource
 def get_rag_system():
-    """Cache the RAG system initialization with parallel loading"""
+    """Initialize RAG system only when needed"""
     collection_name = os.getenv("OLLAMA_COLLECTION_NAME")
     if not collection_name:
         return None
     
-    with ThreadPoolExecutor(max_workers=2) as executor:
-        # Initialize LLM and client in parallel
-        llm_future = executor.submit(lambda: OllamaLLM(model=os.getenv("OLLAMA_LLM_MODEL", "llama3.2:1b")))
-        client_future = executor.submit(get_client)
-        
-        llm = llm_future.result()
-        client = client_future.result()
-        client.load_collection(collection_name)
-        
+    llm = OllamaLLM(
+        model=os.getenv("OLLAMA_LLM_MODEL", "llama3.2:1b"),
+        temperature=0.0,  # Deterministic for faster responses
+        num_predict=750,   # Longer responses
+        top_k=5,         # Smaller sampling space
+        top_p=0.8,       # More focused
+        num_thread=8     # Use more CPU threads
+    )
+    
+    client = get_client()
+    client.load_collection(collection_name)
     return RAGCore(llm, collection_name)
 
 def initialize_session_state():
-    """Initialize session state efficiently with preloading"""
-    if 'rag_core' not in st.session_state:
-        st.session_state.rag_core = get_rag_system()
-    
+    """Initialize session state"""
     if 'chat_history' not in st.session_state:
         st.session_state.chat_history = []
-
-@st.cache_data
-def load_readme_content():
-    """Cache README content"""
-    try:
-        readme_path = os.path.join(os.path.dirname(__file__), 'README.md')
-        with open(readme_path, "r", encoding="utf-8") as file:
-            return file.read()
-    except FileNotFoundError:
-        return "README.md file not found."
+    if 'docs_loaded' not in st.session_state:
+        st.session_state.docs_loaded = False
 
 def create_sidebar():
     with st.sidebar:
-        st.markdown("## 📖 Project Documentation")
-        if st.button("Load Documentation"):
-            readme_content = load_readme_content()
-            st.markdown(readme_content)
+        st.markdown("## 🤖 AI Assistant")
+        st.markdown("**Status:** Ready")
+        st.markdown("**Model:** Ollama + Milvus")
+        st.markdown("---")
+        
+        if st.button("📖 Toggle Documentation", type="secondary"):
+            st.session_state.docs_loaded = not st.session_state.docs_loaded
+        
+        if st.session_state.docs_loaded:
+            try:
+                readme_path = os.path.join(os.path.dirname(__file__), 'README.md')
+                with open(readme_path, "r", encoding="utf-8") as file:
+                    st.markdown(file.read())
+            except FileNotFoundError:
+                st.error("README.md not found")
+        
+        st.markdown("**Tips:**")
+        st.markdown("• Ask about Milvus database")
+        st.markdown("• Give me instructions")
+        st.markdown("• View conversation history below")
 
 
 def create_streamlit_ui():
     create_sidebar()
     
     st.title("🤖 AI Question Answering System")
-    
-    # Show status based on system readiness
-    if st.session_state.get('rag_core'):
-        st.markdown("### Ready to answer your questions!")
-        st.markdown("Ask questions about Milvus database or give me instructions.")
-    else:
-        st.markdown("### Loading system...")
+    st.markdown("Ask questions about Milvus database or give me instructions.")
     
     with st.form(key="question_form"):
         question = st.text_input(
@@ -92,9 +91,7 @@ def create_streamlit_ui():
             key="question_input"
         )
         
-        col1, col2 = st.columns([1, 4])
-        with col1:
-            submit_button = st.form_submit_button("Get Answer", type="primary")
+        submit_button = st.form_submit_button("Get Answer", type="primary")
     
     return question, submit_button
 
@@ -103,12 +100,16 @@ def main():
     
     question, submit_button = create_streamlit_ui()
     
-    if st.session_state.rag_core is None:
-        st.error('Cannot find OLLAMA_COLLECTION_NAME environment variable')
-        return
-    
     if submit_button:
         if question.strip():
+            # Initialize RAG system only when first question is asked
+            if 'rag_core' not in st.session_state:
+                with st.spinner("Initializing system..."):
+                    st.session_state.rag_core = get_rag_system()
+                    if st.session_state.rag_core is None:
+                        st.error('Cannot find OLLAMA_COLLECTION_NAME environment variable')
+                        return
+            
             with st.spinner("Generating answer..."):
                 try:
                     response, doc_count = st.session_state.rag_core.query(question, st.session_state.chat_history)
@@ -144,7 +145,9 @@ def main():
                 except Exception as e:
                     st.error(f"An error occurred: {str(e)}")
         else:
-            st.warning("⚠️ Please enter a question first.")
+            # Only show warning if no chat history exists
+            if not st.session_state.chat_history:
+                st.warning("⚠️ Please enter a question first.")
     
     st.markdown("---")
     st.markdown("*Powered by Ollama and Milvus*")
