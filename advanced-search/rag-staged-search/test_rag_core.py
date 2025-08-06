@@ -5,14 +5,15 @@ from rag_core import needs_retrieval, rag_query_with_retrieval, direct_response,
 def test_needs_retrieval():
     """Test classification logic"""
     mock_llm = Mock()
+    chat_history = []
     
     # Test Milvus question
     mock_llm.invoke.return_value = "YES"
-    assert needs_retrieval(mock_llm, "How to create Milvus collection?") == True
+    assert needs_retrieval(mock_llm, "How to create Milvus collection?", chat_history) == True
     
     # Test greeting
     mock_llm.invoke.return_value = "NO"
-    assert needs_retrieval(mock_llm, "Hello") == False
+    assert needs_retrieval(mock_llm, "Hello", chat_history) == False
 
 def test_rag_with_retrieval():
     """Test RAG with document retrieval"""

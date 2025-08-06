@@ -4,7 +4,7 @@ import os
 import matplotlib.pyplot as plt
 
 # Configuration
-model = "nomic-embed-text"  # or another Ollama-compatible model
+model = os.getenv("OLLAMA_LLM_MODEL")  # or another Ollama-compatible model
 prompt = "This is a test sentence for benchmarking."
 thread_counts = [1, 2, 4, 6, 8]  # adjust based on your CPU
 num_runs_per_thread = 3  # average out for stability

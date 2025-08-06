@@ -1,19 +1,35 @@
 # We load all markdown files from the folder milvus_docs/en/faq. For each document, we just simply use "# "
 # to separate the content in the file, which can roughly separate the content of each main part of the markdown file.
-import os, sys
+import os
 from glob import glob
 from tqdm import tqdm
 
 from dotenv import load_dotenv
 load_dotenv()
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from core.MilvusUtils import MilvusUtils
+from core import get_client, has_collection, EmbeddingProvider
 
 
 collection_name = os.getenv("OLLAMA_COLLECTION_NAME") or "milvus_ollama_collection"
 
-client = MilvusUtils.get_client()
+client = get_client()
+
+def check_collection_and_confirm():
+    """Check if collection exists and get user confirmation"""
+    if has_collection(collection_name):
+        print(f"Collection '{collection_name}' already exists.")
+        choice = input("Do you want to (d)rop and recreate, or (a)bort? [d/a]: ").lower().strip()
+        
+        if choice == 'a':
+            print("Process aborted by user.")
+            return False
+        elif choice == 'd':
+            print(f"Dropping collection '{collection_name}'...")
+            return True
+        else:
+            print("Invalid choice. Aborting.")
+            return False
+    return True
 
 def create_collection(embedding_dim=1024):
     if client.has_collection(collection_name):
@@ -30,6 +46,10 @@ def create_collection(embedding_dim=1024):
 
 
 def process():
+    # Check collection and get user confirmation
+    if not check_collection_and_confirm():
+        return
+    
     text_lines = []
 
     for file_path in tqdm(glob("./document-loaders/milvus_docs/en/**/*.md", recursive=True), desc="Reading files"):
@@ -43,7 +63,7 @@ def process():
             continue
             
         try:
-            vector = MilvusUtils.embed_text_ollama(line)
+            vector = EmbeddingProvider.embed_text(line, provider='ollama')
             if vector:
                 data.append({"id": len(data), "vector": vector, "text": line})
         except Exception as e:
@@ -57,4 +77,5 @@ def process():
     create_collection(dimension)
     client.insert(collection_name=collection_name, data=data)
 
-process()
+if __name__ == "__main__":
+    process()

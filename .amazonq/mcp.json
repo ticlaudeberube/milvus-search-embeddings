@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-     "milvus": {
+    "milvus": {
       "command": "python",
       "args": ["-m", "mcp_server_milvus"],
       "env": {

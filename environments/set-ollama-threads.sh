@@ -1,1 +1,0 @@
-export OLLAMA_NUM_THREADS=8

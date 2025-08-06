@@ -1,46 +1,125 @@
-# Test Documentation
+# Tests Documentation
 
-## Installation
+This directory contains comprehensive tests for the `core` package and related functionality.
 
-Install required testing packages:
+## Test Files Status
+
+### ✅ **Useful and Working Tests**
+
+#### `test_milvus_utils.py` - **Core Unit Tests** (15 tests)
+- **Status**: ✅ All 15 tests passing
+- **Coverage**: Complete MilvusUtils functionality
+- **Tests**: Client, database ops, collections, embeddings, device detection
+- **Run**: `pytest Tests/test_milvus_utils.py -v`
+
+#### `test_db_scripts.py` - **Database Script Tests** (8 tests)
+- **Status**: ✅ All 8 tests passing
+- **Coverage**: Database and collection script validation
+- **Tests**: create_db, drop_db, create_collection, drop_collection scripts
+- **Run**: `pytest Tests/test_db_scripts.py -v`
+
+#### `test_integration.py` - **Integration Tests** (3 tests)
+- **Status**: ✅ 2 passing, 1 skipped (expected)
+- **Coverage**: End-to-end workflows with Milvus
+- **Requires**: Running Milvus instance
+- **Run**: `pytest Tests/test_integration.py -v`
+
+#### `conftest.py` - **Test Configuration**
+- **Status**: ✅ Working
+- **Purpose**: Pytest fixtures and configuration
+- **Contains**: Mock clients, sample data, module reset
+
+### ⚠️ **Diagnostic/Manual Tests**
+
+#### `test_env_vars.py` - **Environment Variable Test**
+- **Status**: ⚠️ Manual test script (not pytest)
+- **Purpose**: Validate environment configuration
+- **Run**: `python Tests/test_env_vars.py`
+- **Expected**: Shows env vars and embedding test results
+
+#### `test_missing_env.py` - **Missing Environment Test**
+- **Status**: ⚠️ Manual test script
+- **Purpose**: Test error handling for missing env vars
+- **Run**: `python Tests/test_missing_env.py`
+- **Expected**: Shows proper error messages
+
+#### `test_all_loaders.py` - **Document Loader Integration**
+- **Status**: ⚠️ Complex integration test
+- **Purpose**: Test all document loading workflows
+- **Requires**: Milvus + external dependencies
+- **Run**: `python Tests/test_all_loaders.py`
+
+### 📄 **Support Files**
+
+#### `rag_test_data.py` - **Test Data**
+- **Status**: ✅ Support file
+- **Purpose**: Sample data for RAG testing
+
+#### `README.md` - **This Documentation**
+- **Status**: ✅ Documentation
+
+## Quick Test Commands
+
+### Run Core Tests (Recommended)
 ```bash
-pip install pytest coverage
+# Essential core functionality tests
+pytest Tests/test_milvus_utils.py Tests/test_db_scripts.py -v
+
+# With coverage report
+pytest Tests/test_milvus_utils.py --cov=core --cov-report=term-missing
 ```
 
-## Running Tests
-
-### Single Test File
+### Run Integration Tests
 ```bash
-# Run specific test file
-python -m pytest Tests/test_MilvusUtils.py
-
-# Run with verbose output
-python -m pytest Tests/test_MilvusUtils.py -v
+# Requires running Milvus instance
+pytest Tests/test_integration.py -v
 ```
 
-### All Tests
+### Run All Automated Tests
 ```bash
-# Run all tests in Tests directory
-python -m pytest Tests/
-
-# Run with verbose output
-python -m pytest Tests/ -v
+# All pytest-compatible tests
+pytest Tests/ -v
 ```
 
-## Coverage Reports
-
-### Generate Coverage
+### Manual Diagnostic Tests
 ```bash
-# Run tests with coverage
-python -m coverage run -m pytest Tests/test_MilvusUtils.py
+# Environment validation
+python Tests/test_env_vars.py
+python Tests/test_missing_env.py
 
-# Generate coverage report
-python -m coverage report -m
-
-# Generate HTML coverage report
-python -m coverage html
+# Document loader integration (slow)
+python Tests/test_all_loaders.py
 ```
 
-### View Coverage
-- Terminal report: `python -m coverage report -m`
-- HTML report: Open `htmlcov/index.html` in browser
+## Test Coverage Summary
+
+- **✅ 23 automated tests** (15 core + 8 scripts)
+- **✅ 3 integration tests** (requires Milvus)
+- **✅ 3 manual diagnostic tests**
+- **✅ Complete core functionality coverage**
+- **✅ Proper mocking** (no external API calls in unit tests)
+- **✅ Error handling validation**
+
+## Prerequisites
+
+```bash
+# Install package in development mode
+pip install -e .
+
+# Install test dependencies
+pip install pytest pytest-cov numpy
+```
+
+## Test Categories
+
+- **Unit Tests**: Core functionality with mocking
+- **Integration Tests**: End-to-end with real Milvus
+- **Script Tests**: Utility script validation
+- **Diagnostic Tests**: Environment and configuration validation
+
+## Recommendations
+
+1. **Always run**: `test_milvus_utils.py` and `test_db_scripts.py`
+2. **Before deployment**: Run integration tests with Milvus
+3. **Environment issues**: Use diagnostic tests
+4. **CI/CD**: Focus on automated pytest tests

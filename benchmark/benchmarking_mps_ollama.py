@@ -1,4 +1,4 @@
-import time
+import time, os
 from ollama import Client
 from tqdm import tqdm
 
@@ -8,7 +8,7 @@ client = Client(host='http://localhost:11434')  # default port for Ollama
 sentences = ["This is a test sentence."] * 1000  # simulate batch of 1000
 
 # Choose model that supports embedding (e.g., 'nomic-embed-text')
-model = "nomic-embed-text"  # time 17.69s
+model = os.getenv("OLLAMA_LLM_MODEL")  # time 17.69s
 # model = "mxbai-embed-large" #time 35.78
 # model = "llama3.2" #time  212s
 
