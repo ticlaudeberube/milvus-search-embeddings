@@ -1,15 +1,13 @@
 import pytest
-import sys
-import os
+import numpy as np
 from unittest.mock import patch, MagicMock
 
-from core import get_client, create_collection, insert_data, create_database, vectorize_documents
+from core import get_client, create_collection, insert_data, create_database, vectorize_documents, drop_collection
 
 
 class TestMilvusIntegration:
     """Integration tests for MilvusUtils (requires running Milvus instance)"""
 
-    @pytest.mark.integration
     def test_full_workflow(self):
         """Test complete workflow: create collection, insert data, search"""
         collection_name = "test_integration_collection"
@@ -33,20 +31,19 @@ class TestMilvusIntegration:
             # Cleanup
             client = get_client()
             if client.has_collection(collection_name):
-                client.drop_collection(collection_name)
+                drop_collection(collection_name)
 
-    @pytest.mark.integration
-    @patch('pymilvus.model.DefaultEmbeddingFunction')
+    @patch('core.collections.model.DefaultEmbeddingFunction')
     def test_vectorize_documents_integration(self, mock_embedding_fn):
         """Test document vectorization integration"""
         collection_name = "test_vectorize_collection"
         
-        # Setup mock embedding function
+        # Setup mock embedding function with numpy arrays
         mock_embedding = MagicMock()
-        import numpy as np
-        mock_vector1 = np.array([0.1] * 768)
-        mock_vector2 = np.array([0.2] * 768)
-        mock_embedding.encode_documents.return_value = [mock_vector1, mock_vector2]
+        mock_embedding.encode_documents.return_value = [
+            np.array([0.1] * 768, dtype=np.float32),
+            np.array([0.2] * 768, dtype=np.float32)
+        ]
         mock_embedding.dim = 768
         mock_embedding_fn.return_value = mock_embedding
         
@@ -63,9 +60,8 @@ class TestMilvusIntegration:
             # Cleanup
             client = get_client()
             if client.has_collection(collection_name):
-                client.drop_collection(collection_name)
+                drop_collection(collection_name)
 
-    @pytest.mark.integration
     def test_database_operations(self):
         """Test database creation and management"""
         test_db = "test_integration_db"

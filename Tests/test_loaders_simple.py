@@ -17,7 +17,7 @@ def test_basic_functionality():
         print("[OK] Milvus client connection successful")
     except Exception as e:
         print(f"[FAIL] Milvus connection failed: {e}")
-        return False
+        assert False, "Milvus connection failed"
     
     # Test 2: Check if docs exist
     docs_path = Path("document-loaders/milvus_docs/en")
@@ -77,7 +77,6 @@ def test_basic_functionality():
         print(f"[FAIL] Collection operations failed: {e}")
     
     print("\nTest completed!")
-    return True
 
 def check_environment():
     """Check environment configuration."""

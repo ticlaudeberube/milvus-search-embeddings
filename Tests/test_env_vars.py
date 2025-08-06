@@ -9,7 +9,7 @@ def test_env_vars():
     
     # Test basic env vars
     vars_to_test = [
-        ("OLLAMA_LLM_MODEL", "llama3.2"),
+        ("OLLAMA_LLM_MODEL", "llama3.2:1b"),
         ("OLLAMA_EMBEDDING_MODEL", "nomic-embed-text:v1.5"),
         ("HF_EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2"),
         ("EMBEDDING_PROVIDER", "ollama"),

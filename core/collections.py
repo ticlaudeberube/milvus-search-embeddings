@@ -6,8 +6,14 @@ from .client import get_client
 from .exceptions import CollectionError
 
 def create_collection(collection_name: str | None, dimension: int = 1536, 
-                     metric_type: str = "COSINE", consistency_level: str = "Session") -> None:
-    """Create or recreate a collection."""
+                     metric_type: str = "COSINE", consistency_level: str = "Session", 
+                     auto_index: bool = True) -> None:
+    """Create or recreate a collection.
+    
+    Args:
+        auto_index: If True, creates collection with automatic index. 
+                   If False, creates collection without index (you must create index separately).
+    """
     if not collection_name:
         raise CollectionError("collection_name is required")
     
@@ -16,13 +22,26 @@ def create_collection(collection_name: str | None, dimension: int = 1536,
         if client.has_collection(collection_name=collection_name):
             client.drop_collection(collection_name=collection_name)
         
-        client.create_collection(
-            collection_name=collection_name,
-            dimension=dimension,
-            metric_type=metric_type,
-            consistency_level=consistency_level
-        )
-        print(f"Collection - {collection_name} - created successfully")
+        if auto_index:
+            # Simple method - creates collection with automatic index
+            client.create_collection(
+                collection_name=collection_name,
+                dimension=dimension,
+                metric_type=metric_type,
+                consistency_level=consistency_level
+            )
+        else:
+            # Schema method - creates collection without index
+            from pymilvus import DataType
+            schema = client.create_schema(auto_id=False, enable_dynamic_field=True)
+            schema.add_field(field_name="id", datatype=DataType.INT64, is_primary=True)
+            schema.add_field(field_name="vector", datatype=DataType.FLOAT_VECTOR, dim=dimension)
+            schema.add_field(field_name="text", datatype=DataType.VARCHAR, max_length=65535)
+            schema.add_field(field_name="subject", datatype=DataType.VARCHAR, max_length=100)
+            
+            client.create_collection(collection_name=collection_name, schema=schema)
+            
+        print(f"Collection - {collection_name} - created successfully {'with auto-index' if auto_index else 'without index'}")
     except MilvusException as e:
         raise CollectionError(f"Failed to create collection '{collection_name}': {e}")
 

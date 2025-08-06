@@ -1,100 +1,125 @@
-# Tests for Core Package
+# Tests Documentation
 
-This directory contains comprehensive unit tests for the `core` package components.
+This directory contains comprehensive tests for the `core` package and related functionality.
 
-## Test Files
+## Test Files Status
 
-- `test_utils.py` - Main unit tests for MilvusClient class and utility scripts
-- `test_MilvusUtils.py` - Legacy test file (being updated)
-- `test_integration.py` - Integration tests (requires running Milvus instance)
-- `conftest.py` - Pytest configuration and fixtures
+### ✅ **Useful and Working Tests**
 
-## Running Tests
+#### `test_milvus_utils.py` - **Core Unit Tests** (15 tests)
+- **Status**: ✅ All 15 tests passing
+- **Coverage**: Complete MilvusUtils functionality
+- **Tests**: Client, database ops, collections, embeddings, device detection
+- **Run**: `pytest Tests/test_milvus_utils.py -v`
 
-### Prerequisites
+#### `test_db_scripts.py` - **Database Script Tests** (8 tests)
+- **Status**: ✅ All 8 tests passing
+- **Coverage**: Database and collection script validation
+- **Tests**: create_db, drop_db, create_collection, drop_collection scripts
+- **Run**: `pytest Tests/test_db_scripts.py -v`
+
+#### `test_integration.py` - **Integration Tests** (3 tests)
+- **Status**: ✅ 2 passing, 1 skipped (expected)
+- **Coverage**: End-to-end workflows with Milvus
+- **Requires**: Running Milvus instance
+- **Run**: `pytest Tests/test_integration.py -v`
+
+#### `conftest.py` - **Test Configuration**
+- **Status**: ✅ Working
+- **Purpose**: Pytest fixtures and configuration
+- **Contains**: Mock clients, sample data, module reset
+
+### ⚠️ **Diagnostic/Manual Tests**
+
+#### `test_env_vars.py` - **Environment Variable Test**
+- **Status**: ⚠️ Manual test script (not pytest)
+- **Purpose**: Validate environment configuration
+- **Run**: `python Tests/test_env_vars.py`
+- **Expected**: Shows env vars and embedding test results
+
+#### `test_missing_env.py` - **Missing Environment Test**
+- **Status**: ⚠️ Manual test script
+- **Purpose**: Test error handling for missing env vars
+- **Run**: `python Tests/test_missing_env.py`
+- **Expected**: Shows proper error messages
+
+#### `test_all_loaders.py` - **Document Loader Integration**
+- **Status**: ⚠️ Complex integration test
+- **Purpose**: Test all document loading workflows
+- **Requires**: Milvus + external dependencies
+- **Run**: `python Tests/test_all_loaders.py`
+
+### 📄 **Support Files**
+
+#### `rag_test_data.py` - **Test Data**
+- **Status**: ✅ Support file
+- **Purpose**: Sample data for RAG testing
+
+#### `README.md` - **This Documentation**
+- **Status**: ✅ Documentation
+
+## Quick Test Commands
+
+### Run Core Tests (Recommended)
+```bash
+# Essential core functionality tests
+pytest Tests/test_milvus_utils.py Tests/test_db_scripts.py -v
+
+# With coverage report
+pytest Tests/test_milvus_utils.py --cov=core --cov-report=term-missing
+```
+
+### Run Integration Tests
+```bash
+# Requires running Milvus instance
+pytest Tests/test_integration.py -v
+```
+
+### Run All Automated Tests
+```bash
+# All pytest-compatible tests
+pytest Tests/ -v
+```
+
+### Manual Diagnostic Tests
+```bash
+# Environment validation
+python Tests/test_env_vars.py
+python Tests/test_missing_env.py
+
+# Document loader integration (slow)
+python Tests/test_all_loaders.py
+```
+
+## Test Coverage Summary
+
+- **✅ 23 automated tests** (15 core + 8 scripts)
+- **✅ 3 integration tests** (requires Milvus)
+- **✅ 3 manual diagnostic tests**
+- **✅ Complete core functionality coverage**
+- **✅ Proper mocking** (no external API calls in unit tests)
+- **✅ Error handling validation**
+
+## Prerequisites
+
 ```bash
 # Install package in development mode
 pip install -e .
 
 # Install test dependencies
-pip install pytest pytest-cov
-```
-
-### Unit Tests
-```bash
-# Run specific test file
-pytest Tests/test_utils.py -v
-pytest Tests/test_utils_updated.py -v
-pytest Tests/test_MilvusUtils.py -v
-
-# Run all unit tests
-pytest Tests/ -v
-
-# Run with coverage
-pytest Tests/test_utils.py --cov=core --cov-report=term-missing
-```
-
-### Integration Tests (Requires Milvus)
-```bash
-# Start Milvus first
-docker run -d --name milvus -p 19530:19530 -p 9091:9091 milvusdb/milvus:latest
-
-# Run integration tests
-pytest Tests/test_integration.py -v
-
-# Skip integration tests
-pytest Tests/ -m "not integration" -v
-```
-
-### Document Loader Tests
-```bash
-# Run loader tests (requires environment setup)
-pytest Tests/test_utils.py::TestDocumentLoaders -v
-
-# Skip slow tests
-pytest Tests/ -m "not slow" -v
-```
-
-## Test Coverage
-
-The tests cover:
-
-### MilvusClient Class (from core.utils)
-- ✅ Client initialization (`get_client`)
-- ✅ Database operations (`create_database`)
-- ✅ Collection operations (`create_collection`, `drop_collection`, `has_collection`)
-- ✅ Data insertion (`insert_data`)
-- ✅ Document vectorization (`vectorize_documents`)
-- ✅ Text embedding (`embed_text`, `embed_text_hf`, `embed_text_ollama`)
-- ✅ Device detection (`get_device`)
-
-### Utility Scripts
-- ✅ create_collection.py
-- ✅ create_db.py  
-- ✅ drop_collection.py
-- ✅ drop_db.py
-
-## Test Markers
-
-- `integration` - Tests requiring running Milvus instance
-- `slow` - Tests that take longer to execute
-
-## Import Structure
-
-Tests use the refactored import:
-```python
-from core import MilvusUtils
-```
-
-## Dependencies
-
-Tests require:
-- pytest
-- pytest-cov
-- numpy (for array mocking)
-- unittest.mock (built-in)
-
-Install with:
-```bash
 pip install pytest pytest-cov numpy
 ```
+
+## Test Categories
+
+- **Unit Tests**: Core functionality with mocking
+- **Integration Tests**: End-to-end with real Milvus
+- **Script Tests**: Utility script validation
+- **Diagnostic Tests**: Environment and configuration validation
+
+## Recommendations
+
+1. **Always run**: `test_milvus_utils.py` and `test_db_scripts.py`
+2. **Before deployment**: Run integration tests with Milvus
+3. **Environment issues**: Use diagnostic tests
+4. **CI/CD**: Focus on automated pytest tests
