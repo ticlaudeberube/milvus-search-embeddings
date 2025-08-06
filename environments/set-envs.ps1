@@ -22,7 +22,7 @@ $env:PYTORCH_MPS_HIGH_WATERMARK_RATIO = "0.0"
 $env:USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36"
 $env:MILVUS_HOST = "localhost"
 $env:MILVUS_PORT = "19530"
-$env:HUGGINGFACEHUB_API_TOKEN = "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"
+$env:HUGGINGFACEHUB_API_TOKEN = ""
 
 Write-Host "Environment variables set successfully!" -ForegroundColor Green
 Write-Host "OLLAMA_LLM_MODEL: $env:OLLAMA_LLM_MODEL"

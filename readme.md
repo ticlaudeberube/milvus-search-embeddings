@@ -230,7 +230,7 @@ use database --db_name test
 | `MY_DATABASE` | Database name | default | No |
 | `MILVUS_OLLAMA_COLLECTION_NAME` | Ollama collection | demo_collection | No |
 | `EMBEDDING_PROVIDER` | Provider (ollama/huggingface) | ollama | No |
-| `OLLAMA_LLM_MODEL` | Ollama LLM model | llama3.2 | No |
+| `OLLAMA_LLM_MODEL` | Ollama LLM model | llama3.2:1b | No |
 | `OLLAMA_EMBEDDING_MODEL` | Ollama embedding model | nomic-embed-text:v1.5 | No |
 | `HF_EMBEDDING_MODEL` | HuggingFace model | sentence-transformers/all-MiniLM-L6-v2 | No |
 | `HF_TOKEN` | HuggingFace API token | - | Yes* |

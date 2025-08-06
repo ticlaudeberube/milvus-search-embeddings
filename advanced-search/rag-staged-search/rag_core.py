@@ -150,7 +150,12 @@ Answer:"""
         needs_history = any(keyword in question.lower() for keyword in resume_keywords) and len(chat_history) > 0
         
         if needs_history:
-            history_text = "\n".join([f"Q: {h['question']}\nA: {h['answer']}" for h in chat_history[-5:]])
+            # Optimize history: only questions and truncated answers
+            history_items = []
+            for h in chat_history[-3:]:  # Reduced from 5 to 3 items
+                answer = h['answer'][:100] + "..." if len(h['answer']) > 100 else h['answer']  # Truncate long answers
+                history_items.append(f"Q: {h['question']}\nA: {answer}")
+            history_text = "\n".join(history_items)
             print(f"DEBUG - Including history for summary request: {len(chat_history)} items")
             print(f"DEBUG - History text length: {len(history_text)} chars")
         else:
