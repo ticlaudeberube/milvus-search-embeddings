@@ -234,9 +234,30 @@ use database --db_name test
 | `OLLAMA_EMBEDDING_MODEL` | Ollama embedding model | nomic-embed-text:v1.5 | No |
 | `HF_EMBEDDING_MODEL` | HuggingFace model | sentence-transformers/all-MiniLM-L6-v2 | No |
 | `HF_TOKEN` | HuggingFace API token | - | Yes* |
-| `OLLAMA_NUM_THREADS` | Ollama threads | 4 | No |
+| `OLLAMA_NUM_THREADS` | Ollama threads | **Auto-set to 4** | No |
 
 *Required for HuggingFace API access
+
+### Ollama Threading
+
+`OLLAMA_NUM_THREADS` is **automatically set** when using Ollama embeddings:
+
+```python
+from core import EmbeddingProvider
+# Auto-sets OLLAMA_NUM_THREADS=4 if not already set
+embeddings = EmbeddingProvider.embed_text("text", provider='ollama')
+```
+
+Manual control:
+```python
+from core import ensure_threads
+ensure_threads(8)  # Set custom thread count
+```
+
+Find optimal threads:
+```bash
+python benchmark/ollama-threads-check.py
+```
 
 ## Features
 
