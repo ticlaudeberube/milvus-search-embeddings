@@ -16,6 +16,27 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
+# Fix emoji display immediately after page config
+st.markdown("""
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap');
+    h1, h2 {
+        font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", system-ui, sans-serif !important;
+        font-size: 20px !important
+    }
+    h2, h3 {
+        font-size: 18px !important
+    }
+    button:hover, 
+    button:active,
+    button:focus          {
+        border-color: rgb(0, 104, 201) !important;
+        color: rgb(0, 104, 201) !important;
+        background-color: #ddd !important;  
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
 # Hide Streamlit UI elements and fix button colors
 if 'ui_hidden' not in st.session_state:
     st.session_state.ui_hidden = True
@@ -80,7 +101,6 @@ def create_sidebar():
 
 def create_streamlit_ui():
     create_sidebar()
-    
     st.title("🤖 AI Question Answering System")
     st.markdown("Ask questions about Milvus database or give me instructions.")
     
@@ -91,7 +111,7 @@ def create_streamlit_ui():
             key="question_input"
         )
         
-        submit_button = st.form_submit_button("Get Answer", type="primary")
+        submit_button = st.form_submit_button("Get Answer", type="secondary")
     
     return question, submit_button
 
