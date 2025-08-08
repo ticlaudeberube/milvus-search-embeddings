@@ -1,6 +1,6 @@
 # Tests Folder
 
-Comprehensive test suites for the two-stage RAG system.
+Comprehensive test suites for the filtered RAG system.
 
 ## Test Files
 

@@ -34,6 +34,10 @@ class EmbeddingProvider:
     @staticmethod
     def _embed_ollama(text: Union[str, List[str]], model: Optional[str] = None):
         """Embed text using Ollama."""
+        # Ensure OLLAMA_NUM_THREADS is always set
+        if not os.getenv('OLLAMA_NUM_THREADS'):
+            os.environ['OLLAMA_NUM_THREADS'] = '4'
+        
         _model = model or os.getenv('OLLAMA_EMBEDDING_MODEL')
         if not _model:
             raise EmbeddingError("OLLAMA_EMBEDDING_MODEL environment variable not set")

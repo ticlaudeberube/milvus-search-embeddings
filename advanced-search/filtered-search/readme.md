@@ -1,18 +1,18 @@
-# Two-Stage RAG Implementation
+# Filtered RAG Implementation
 
-Optimized RAG system that intelligently decides when to use document retrieval vs. direct responses.
+Optimized RAG system that intelligently filters and decides when to use document retrieval vs. direct responses.
 
 ## Overview
 
-The `two_stage_rag.py` implements a smart classification system using LangChain's RunnableSequence (LCEL) to handle both Milvus-related questions and general conversation efficiently.
+The `streamlit_filtered_rag.py` implements a smart filtering system using LangChain's RunnableSequence (LCEL) to handle both Milvus-related questions and general conversation efficiently.
 
-### Stage 1: Classification
+### Filter 1: Classification
 - **Keyword Pre-filtering**: Fast pattern matching for common cases
 - **LLM Classification**: `PromptTemplate | LLM | StrOutputParser()` for edge cases
 - **Caching**: Classification results cached for repeated questions
 - **Performance**: 43% faster response times through optimized filtering
 
-### Stage 2: Conditional Processing
+### Filter 2: Conditional Processing
 - **Technical questions**: Full RAG with vector search and context retrieval
 - **General questions**: Direct LLM response without retrieval
 - **Conversation management**: Smart history inclusion for resume/summary requests
@@ -28,7 +28,7 @@ The `two_stage_rag.py` implements a smart classification system using LangChain'
 ## Usage
 
 ```bash
-streamlit run two_stage_rag.py
+streamlit run streamlit_filtered_rag.py
 ```
 
 ### Environment Variables
@@ -51,7 +51,7 @@ streamlit run two_stage_rag.py
 
 ### Run
 ```bash
-streamlit run .\advanced-search\rag-staged-search\two-stage-rag.py
+streamlit run .\advanced-search\filtered-rag\streamlit_filtered_rag.py
 ```
 ### Automated Tests
 ```bash

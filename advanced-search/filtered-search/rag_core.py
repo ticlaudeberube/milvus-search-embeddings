@@ -17,9 +17,22 @@ class RAGCore:
         # Create templates but don't build chains until needed
         self._classification_template = PromptTemplate(
             input_variables=["question"],
-            template="""Milvus question? YES/NO
-{question}
-Answer:"""
+            template="""Does this question require retrieving Milvus documentation to answer properly?
+
+Question: {question}
+
+Answer YES if the question asks about:
+- Milvus features, capabilities, or functionality
+- Technical concepts, architecture, or how things work
+- Usage instructions, tutorials, or guides
+- Specific technical details or explanations
+
+Answer NO if the question is:
+- A greeting, thanks, or casual conversation
+- About resuming or continuing something
+- A simple yes/no that doesn't need documentation
+
+Answer (YES/NO):"""
         )
         
         self._rag_template = PromptTemplate(
@@ -55,13 +68,18 @@ Answer:"""
         start_time = time.time()
         
         # Expanded keyword-based pre-filter
-        no_docs_patterns = ['hello', 'hi', 'thanks', 'thank you', 'bye', 'goodbye', 'how are you', 'good morning', 'good afternoon', 'good evening', 'resume', 'conversation', 'chat history', 'what did we discuss', 'continue', 'summarize', 'weather', 'temperature', 'rain', 'sunny', 'cloudy', 'my name is', 'from now on', 'always include', 'tell me more about its', 'more about its']
-        docs_patterns = ['milvus', 'vector', 'database', 'collection', 'index', 'search', 'embedding', 'insert', 'query', 'schema']
+        no_docs_patterns = ['hello', 'hi', 'thanks', 'thank you', 'bye', 'goodbye', 'how are you', 'good morning', 'good afternoon', 'good evening', 'resume', 'conversation', 'chat history', 'what did we discuss', 'continue', 'summarize', 'weather', 'temperature', 'rain', 'sunny', 'cloudy', 'my name is', 'from now on', 'always include']
+        docs_patterns = [
+            'milvus', 'vector', 'database', 'collection', 'index', 'search', 'embedding', 'insert', 'query', 'schema',
+            'what is', 'tell me', 'explain', 'describe', 'features', 'capabilities', 'architecture',
+            'how does', 'how to', 'documentation', 'guide', 'tutorial', 'more about its'
+        ]
         
         question_lower = question.lower()
         
-        # Skip LLM if clearly greeting/social
-        if any(pattern in question_lower for pattern in no_docs_patterns):
+        # Skip LLM if clearly greeting/social - use word boundaries to avoid false matches
+        import re
+        if any(re.search(r'\b' + re.escape(p) + r'\b', question_lower) for p in no_docs_patterns):
             print(f"DEBUG - Quick filter: NO DOCS (took {time.time() - start_time:.2f}s)")
             return False
             
@@ -86,8 +104,8 @@ Answer:"""
             "question": question
         })
         
-        # More conservative classification - only YES if explicitly about Milvus/technical
-        needs_docs = "YES" in llm_result.upper() and any(pattern in question_lower for pattern in docs_patterns)
+        # LLM classification - trust the LLM decision
+        needs_docs = "YES" in llm_result.upper()
         self.classification_cache[cache_key] = needs_docs
         print(f"DEBUG - Classification: {'NEEDS DOCS' if needs_docs else 'NO DOCS'} (took {time.time() - start_time:.2f}s)")
         return needs_docs

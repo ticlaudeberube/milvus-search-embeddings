@@ -1,5 +1,11 @@
 import pytest
+import os
+import sys
 from unittest.mock import Mock, patch
+
+# Add parent directory to path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from rag_core import RAGCore, optimized_rag_query
 
 def test_needs_retrieval():

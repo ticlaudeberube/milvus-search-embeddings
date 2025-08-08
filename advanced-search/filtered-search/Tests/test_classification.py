@@ -1,5 +1,11 @@
 """Test the improved classification logic"""
-from unittest.mock import Mock, patch
+import os
+import sys
+from unittest.mock import Mock
+
+# Add parent directory to path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from rag_core import RAGCore
 
 def test_classification_examples():
@@ -18,8 +24,7 @@ def test_classification_examples():
             "Tell me about vector search",
             "How does similarity search work?",
             "What are Milvus features?",
-            "How to install Milvus?",
-            "Tell me more about its features"
+            "How to install Milvus?"
     ]
     
     # Test cases that should return NO (no docs needed)
@@ -28,7 +33,8 @@ def test_classification_examples():
             "My name is Claude",
             "What's the weather today?",
             "How are you?",
-            "Thank you"
+            "Thank you",
+            "Tell me more about its features"  # Vague follow-up
     ]
     
     print("Testing YES cases (should need docs):")

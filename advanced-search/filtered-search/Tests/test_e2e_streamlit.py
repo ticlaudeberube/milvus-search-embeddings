@@ -3,10 +3,11 @@
 
 import os
 import sys
-import subprocess
-import time
 from dotenv import load_dotenv
 load_dotenv()
+
+# Add parent directory to path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 def test_streamlit_gui():
     """Test Streamlit GUI by launching it"""
@@ -19,8 +20,7 @@ def test_streamlit_gui():
         print("[Step 1] Testing Streamlit app import...")
         
         # Try to import the main functions
-        sys.path.append('.')
-        from two_stage_rag import get_rag_system, initialize_session_state
+        from streamlit_filtered_rag import get_rag_system, initialize_session_state
         
         print("[PASS] Streamlit app imports successfully")
         
@@ -40,7 +40,7 @@ def test_streamlit_gui():
         print("[PASS] Session state functions available")
         
         print("\n[INFO] To fully test the GUI, run:")
-        print("streamlit run two_stage_rag.py")
+        print("streamlit run streamlit_filtered_rag.py")
         print("Then test these scenarios:")
         
         scenarios = [

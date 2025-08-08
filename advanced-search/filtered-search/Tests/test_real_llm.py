@@ -1,7 +1,11 @@
 """Test with real LLM to see actual responses"""
 import os
+import sys
 from dotenv import load_dotenv
 load_dotenv()
+
+# Add parent directory to path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from langchain_ollama.llms import OllamaLLM
 from rag_core import RAGCore
