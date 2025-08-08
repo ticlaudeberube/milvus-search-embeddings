@@ -21,27 +21,35 @@ class RAGCore:
 
 Question: {question}
 
-Answer YES if the question asks about:
+Answer YES ONLY if the question explicitly asks about:
 - Milvus features, capabilities, or functionality
-- Technical concepts, architecture, or how things work
-- Usage instructions, tutorials, or guides
-- Specific technical details or explanations
+- Milvus technical concepts, architecture, or how Milvus works
+- Milvus usage instructions, tutorials, or guides
+- Specific Milvus technical details or explanations
+- Vector databases in the context of Milvus
 
 Answer NO if the question is:
 - A greeting, thanks, or casual conversation
 - About resuming or continuing something
 - A simple yes/no that doesn't need documentation
+- About topics unrelated to Milvus (medicine, general knowledge, etc.)
+- Vague questions like "anything else" without Milvus context
 
 Answer (YES/NO):"""
         )
         
         self._rag_template = PromptTemplate(
             input_variables=["context", "question"],
-            template="""Context: {context}
+            template="""You are a Milvus database expert. Only answer questions about Milvus using the provided context.
 
-                Question: {question}
+Context: {context}
 
-                Answer:"""
+Question: {question}
+
+If the question is about Milvus, answer using only the context provided.
+If the question is NOT about Milvus, respond: "I'm specialized in Milvus database questions. Please ask about Milvus features, usage, or technical details."
+
+Answer:"""
         )
         
         self._direct_template = PromptTemplate(
@@ -51,9 +59,12 @@ Answer (YES/NO):"""
 
 Question: {question}
 
+I'm specialized in Milvus database questions only. 
+
 If this is a greeting (hello, hi, etc.), respond with a friendly greeting and offer to help with Milvus questions.
 If asked to resume or summarize the conversation, list all the topics we discussed in detail.
-Otherwise, answer the question directly.
+If the question is about Milvus, answer it directly.
+If the question is NOT about Milvus, respond: "I'm specialized in Milvus database questions. Please ask about Milvus features, usage, or technical details."
 
 Answer:"""
         )
@@ -67,15 +78,13 @@ Answer:"""
         """Check if question needs document retrieval"""
         start_time = time.time()
         
-        # Expanded keyword-based pre-filter
-        no_docs_patterns = ['hello', 'hi', 'thanks', 'thank you', 'bye', 'goodbye', 'how are you', 'good morning', 'good afternoon', 'good evening', 'resume', 'conversation', 'chat history', 'what did we discuss', 'continue', 'summarize', 'weather', 'temperature', 'rain', 'sunny', 'cloudy', 'my name is', 'from now on', 'always include']
-        docs_patterns = [
-            'milvus', 'vector', 'database', 'collection', 'index', 'search', 'embedding', 'insert', 'query', 'schema',
-            'what is', 'tell me', 'explain', 'describe', 'features', 'capabilities', 'architecture',
-            'how does', 'how to', 'documentation', 'guide', 'tutorial', 'more about its'
-        ]
-        
         question_lower = question.lower()
+        
+        # Strict Milvus-only filtering
+        no_docs_patterns = ['hello', 'hi', 'thanks', 'thank you', 'bye', 'goodbye', 'how are you', 'good morning', 'good afternoon', 'good evening', 'resume', 'conversation', 'chat history', 'what did we discuss', 'continue', 'summarize', 'weather', 'temperature', 'rain', 'sunny', 'cloudy', 'my name is', 'from now on', 'always include', 'anything else', 'what else', 'something else']
+        
+        # Only retrieve docs if question explicitly mentions Milvus
+        docs_patterns = ['milvus', 'vector database', 'vector db', 'collection', 'index', 'embedding', 'similarity search']
         
         # Skip LLM if clearly greeting/social - use word boundaries to avoid false matches
         import re
@@ -83,8 +92,8 @@ Answer:"""
             print(f"DEBUG - Quick filter: NO DOCS (took {time.time() - start_time:.2f}s)")
             return False
             
-        # Skip LLM if clearly technical
-        if any(pattern in question_lower for pattern in docs_patterns):
+        # Only retrieve docs if explicitly about Milvus
+        if 'milvus' in question_lower or any(pattern in question_lower for pattern in docs_patterns):
             print(f"DEBUG - Quick filter: NEEDS DOCS (took {time.time() - start_time:.2f}s)")
             return True
         

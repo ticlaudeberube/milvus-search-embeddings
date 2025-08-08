@@ -74,6 +74,8 @@ def initialize_session_state():
         st.session_state.chat_history = []
     if 'docs_loaded' not in st.session_state:
         st.session_state.docs_loaded = False
+    if 'current_doc_count' not in st.session_state:
+        st.session_state.current_doc_count = 0
 
 def create_sidebar():
     with st.sidebar:
@@ -122,6 +124,9 @@ def main():
     
     if submit_button:
         if question.strip():
+            # Reset retrieved documents for new search
+            st.session_state.current_doc_count = 0
+            
             # Initialize RAG system only when first question is asked
             if 'rag_core' not in st.session_state:
                 with st.spinner("Initializing system..."):
@@ -133,6 +138,9 @@ def main():
             with st.spinner("Generating answer..."):
                 try:
                     response, doc_count = st.session_state.rag_core.query(question, st.session_state.chat_history)
+                    
+                    # Update current document count
+                    st.session_state.current_doc_count = doc_count
                     
                     if doc_count > 0:
                         st.info(f"Retrieved {doc_count} documents from knowledge base")
