@@ -55,7 +55,7 @@ Answer:"""
         start_time = time.time()
         
         # Expanded keyword-based pre-filter
-        no_docs_patterns = ['hello', 'hi', 'thanks', 'thank you', 'bye', 'goodbye', 'how are you', 'good morning', 'good afternoon', 'good evening', 'resume', 'conversation', 'chat history', 'what did we discuss', 'continue', 'summarize', 'weather', 'temperature', 'rain', 'sunny', 'cloudy']
+        no_docs_patterns = ['hello', 'hi', 'thanks', 'thank you', 'bye', 'goodbye', 'how are you', 'good morning', 'good afternoon', 'good evening', 'resume', 'conversation', 'chat history', 'what did we discuss', 'continue', 'summarize', 'weather', 'temperature', 'rain', 'sunny', 'cloudy', 'my name is', 'from now on', 'always include', 'tell me more about its', 'more about its']
         docs_patterns = ['milvus', 'vector', 'database', 'collection', 'index', 'search', 'embedding', 'insert', 'query', 'schema']
         
         question_lower = question.lower()
@@ -86,7 +86,8 @@ Answer:"""
             "question": question
         })
         
-        needs_docs = "YES" in llm_result.upper()
+        # More conservative classification - only YES if explicitly about Milvus/technical
+        needs_docs = "YES" in llm_result.upper() and any(pattern in question_lower for pattern in docs_patterns)
         self.classification_cache[cache_key] = needs_docs
         print(f"DEBUG - Classification: {'NEEDS DOCS' if needs_docs else 'NO DOCS'} (took {time.time() - start_time:.2f}s)")
         return needs_docs

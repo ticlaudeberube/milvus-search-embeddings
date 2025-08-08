@@ -3,6 +3,7 @@
 
 import os
 import sys
+import time
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -54,6 +55,8 @@ def test_scenarios():
     ]
     
     chat_history = []
+    passed = 0
+    failed = 0
     
     print("=" * 80)
     print("TESTING MANUAL SCENARIOS")
@@ -64,6 +67,8 @@ def test_scenarios():
         print(f"Q: {question}")
         print(f"Expected: {expected}")
         
+        scenario_start = time.time()
+        
         try:
             # Test classification
             needs_docs = rag_core.needs_retrieval(question, chat_history)
@@ -73,9 +78,16 @@ def test_scenarios():
             response, doc_count = rag_core.query(question, chat_history)
             
             # Check result
-            status = "PASS" if classification == expected else "FAIL"
-            print(f"Actual: {classification} ({doc_count} docs) - {status}")
-            print(f"Response: {response}")
+            if classification == expected:
+                status = "PASS"
+                passed += 1
+            else:
+                status = "FAIL"
+                failed += 1
+            
+            scenario_time = time.time() - scenario_start
+            print(f"Actual: {classification} ({doc_count} docs) - {status} (took {scenario_time:.2f}s)")
+            print(f"Response: {response[:100]}{'...' if len(response) > 100 else ''}")
             print(f"History length: {len(chat_history)} items")
             
             # Add to history like GUI does (exclude only off-topic redirects)
@@ -88,11 +100,25 @@ def test_scenarios():
                 print(f"[INFO] Resume request with {len(chat_history)-1} previous exchanges")
             
         except Exception as e:
-            print(f"ERROR: {str(e)}")
+            scenario_time = time.time() - scenario_start
+            print(f"ERROR: {str(e)} (took {scenario_time:.2f}s)")
+            failed += 1
+            # Continue with next scenario even if this one fails
+            continue
         
         print("-" * 40)
     
-    print(f"\nTotal conversation history: {len(chat_history)} exchanges")
+    print(f"\n{'='*80}")
+    print(f"RESULTS: {passed} PASSED, {failed} FAILED out of {len(scenarios)} scenarios")
+    print(f"Total conversation history: {len(chat_history)} exchanges")
+    print(f"{'='*80}")
 
 if __name__ == "__main__":
-    test_scenarios()
+    try:
+        test_scenarios()
+    except KeyboardInterrupt:
+        print("\nTest interrupted by user")
+    except Exception as e:
+        print(f"\nTest failed with error: {e}")
+        import traceback
+        traceback.print_exc()

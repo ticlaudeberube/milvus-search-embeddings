@@ -1,5 +1,9 @@
 # Code Generation Rules
 
+## Structure
+- Folder names should be in lowercase
+- Use hyphens or underscores for multi-word folders (prefer hyphens for web-facing, underscores for Python packages)
+
 ## Minimal Implementation
 - Write only essential code that directly solves the problem
 - Avoid verbose implementations and unnecessary abstractions
