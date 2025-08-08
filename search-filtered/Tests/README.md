@@ -7,7 +7,7 @@ Comprehensive test suites for the filtered RAG system.
 ### `test_scenarios.py` - Manual Scenario Testing
 **Purpose**: Tests 10 real-world scenarios with actual LLM responses
 ```bash
-python Tests/test_scenarios.py
+python tests/test_scenarios.py
 ```
 **Features**:
 - Tests classification accuracy (YES/NO for document retrieval)
@@ -18,9 +18,9 @@ python Tests/test_scenarios.py
 ### `test_rag_core.py` - Unit Tests
 **Purpose**: Unit tests with mocked components
 ```bash
-python Tests/test_rag_core.py
+python tests/test_rag_core.py
 # Or with pytest
-pytest Tests/test_rag_core.py -v
+pytest tests/test_rag_core.py -v
 ```
 **Coverage**:
 - Classification logic
@@ -31,7 +31,7 @@ pytest Tests/test_rag_core.py -v
 ### `test_classification.py` - Classification Logic
 **Purpose**: Tests the needs_retrieval classification
 ```bash
-python Tests/test_classification.py
+python tests/test_classification.py
 ```
 **Tests**:
 - Technical questions (should return YES)
@@ -41,7 +41,7 @@ python Tests/test_classification.py
 ### `test_real_llm.py` - Real LLM Testing
 **Purpose**: Tests with actual Ollama LLM (no mocks)
 ```bash
-python Tests/test_real_llm.py
+python tests/test_real_llm.py
 ```
 **Requirements**:
 - Ollama running locally
@@ -51,7 +51,7 @@ python Tests/test_real_llm.py
 ### `test_e2e_streamlit.py` - End-to-End GUI Testing
 **Purpose**: Tests Streamlit GUI components
 ```bash
-python Tests/test_e2e_streamlit.py
+python tests/test_e2e_streamlit.py
 ```
 **Validates**:
 - App imports and initialization
@@ -63,14 +63,14 @@ python Tests/test_e2e_streamlit.py
 
 ```bash
 # Quick test suite (mocked)
-pytest Tests/test_rag_core.py Tests/test_classification.py -v
+pytest tests/test_rag_core.py tests/test_classification.py -v
 
 # Full test suite (requires Ollama)
-python Tests/test_scenarios.py
-python Tests/test_real_llm.py
+python tests/test_scenarios.py
+python tests/test_real_llm.py
 
 # GUI validation
-python Tests/test_e2e_streamlit.py
+python tests/test_e2e_streamlit.py
 ```
 
 ## Test Requirements

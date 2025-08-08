@@ -5,13 +5,13 @@
 1. **Set environment variables**:
    ```bash
    # Linux/macOS
-   source ./hello-world-milvus-search/search-envs.sh
+   source ./search-hello-world-milvus/search-envs.sh
    
    # Windows Command Prompt
-   .\hello-world-milvus-search\search-envs.bat
+   .\search-hello-world-milvus\search-envs.bat
    
    # Windows PowerShell
-   .\hello-world-milvus-search\search-envs.ps1
+   .\search-hello-world-milvus\search-envs.ps1
    ```
 
 2. **Create database**:
@@ -21,17 +21,17 @@
 
 3. **Create collection**:
    ```bash
-   python hello-world-milvus-search/create-index.py
+   python search-hello-world-milvus/create-index.py
    ```
 
 4. **Vectorize documents**:
    ```bash
-   python hello-world-milvus-search/vectorize-search.py
+   python search-hello-world-milvus/vectorize-search.py
    ```
 
 5. **Search**:
    ```bash
-   python hello-world-milvus-search/range-search.py
+   python search-hello-world-milvus/range-search.py
    ```
 
 ## Scripts

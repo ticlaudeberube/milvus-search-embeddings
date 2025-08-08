@@ -51,7 +51,7 @@ streamlit run streamlit_filtered_rag.py
 
 ### Run
 ```bash
-streamlit run .\advanced-search\filtered-rag\streamlit_filtered_rag.py
+streamlit run .\search-advanced\filtered-rag\streamlit_filtered_rag.py
 ```
 ### Automated Tests
 ```bash
