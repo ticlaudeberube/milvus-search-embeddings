@@ -10,19 +10,19 @@ This directory contains comprehensive tests for the `core` package and related f
 - **Status**: ✅ All 15 tests passing
 - **Coverage**: Complete MilvusUtils functionality
 - **Tests**: Client, database ops, collections, embeddings, device detection
-- **Run**: `pytest Tests/test_milvus_utils.py -v`
+- **Run**: `pytest tests/test_milvus_utils.py -v`
 
 #### `test_db_scripts.py` - **Database Script Tests** (8 tests)
 - **Status**: ✅ All 8 tests passing
 - **Coverage**: Database and collection script validation
 - **Tests**: create_db, drop_db, create_collection, drop_collection scripts
-- **Run**: `pytest Tests/test_db_scripts.py -v`
+- **Run**: `pytest tests/test_db_scripts.py -v`
 
 #### `test_integration.py` - **Integration Tests** (3 tests)
 - **Status**: ✅ 2 passing, 1 skipped (expected)
 - **Coverage**: End-to-end workflows with Milvus
 - **Requires**: Running Milvus instance
-- **Run**: `pytest Tests/test_integration.py -v`
+- **Run**: `pytest tests/test_integration.py -v`
 
 #### `conftest.py` - **Test Configuration**
 - **Status**: ✅ Working
@@ -34,20 +34,20 @@ This directory contains comprehensive tests for the `core` package and related f
 #### `test_env_vars.py` - **Environment Variable Test**
 - **Status**: ⚠️ Manual test script (not pytest)
 - **Purpose**: Validate environment configuration
-- **Run**: `python Tests/test_env_vars.py`
+- **Run**: `python tests/test_env_vars.py`
 - **Expected**: Shows env vars and embedding test results
 
 #### `test_missing_env.py` - **Missing Environment Test**
 - **Status**: ⚠️ Manual test script
 - **Purpose**: Test error handling for missing env vars
-- **Run**: `python Tests/test_missing_env.py`
+- **Run**: `python tests/test_missing_env.py`
 - **Expected**: Shows proper error messages
 
 #### `test_all_loaders.py` - **Document Loader Integration**
 - **Status**: ⚠️ Complex integration test
 - **Purpose**: Test all document loading workflows
 - **Requires**: Milvus + external dependencies
-- **Run**: `python Tests/test_all_loaders.py`
+- **Run**: `python tests/test_all_loaders.py`
 
 ### 📄 **Support Files**
 
@@ -63,32 +63,32 @@ This directory contains comprehensive tests for the `core` package and related f
 ### Run Core Tests (Recommended)
 ```bash
 # Essential core functionality tests
-pytest Tests/test_milvus_utils.py Tests/test_db_scripts.py -v
+pytest tests/test_milvus_utils.py tests/test_db_scripts.py -v
 
 # With coverage report
-pytest Tests/test_milvus_utils.py --cov=core --cov-report=term-missing
+pytest tests/test_milvus_utils.py --cov=core --cov-report=term-missing
 ```
 
 ### Run Integration Tests
 ```bash
 # Requires running Milvus instance
-pytest Tests/test_integration.py -v
+pytest tests/test_integration.py -v
 ```
 
 ### Run All Automated Tests
 ```bash
 # All pytest-compatible tests
-pytest Tests/ -v
+pytest tests/ -v
 ```
 
 ### Manual Diagnostic Tests
 ```bash
 # Environment validation
-python Tests/test_env_vars.py
-python Tests/test_missing_env.py
+python tests/test_env_vars.py
+python tests/test_missing_env.py
 
 # Document loader integration (slow)
-python Tests/test_all_loaders.py
+python tests/test_all_loaders.py
 ```
 
 ## Test Coverage Summary

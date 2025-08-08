@@ -8,31 +8,42 @@ This is a Python POC for Milvus embedings, search and Milvus Docs RAG
 - Launch Milvus Docker container 
 - Access web UI: http://127.0.0.1:9091/webui/
 
-### Document folder
-Contains scripts for downloading and embed documents
+### Core Package
+Installable Python package with MilvusUtils class and utility scripts
 
-### Search folder
-Contains basic embedding Alan Touring search 
+### Search Modules
+- **search-advanced/**: RAG implementations with Streamlit and Gradio UIs
+- **search-agentic/**: Agentic RAG with classification and response agents
+- **search-filtered/**: Filtered RAG with document classification
+- **search-hello-world-milvus/**: Basic vector search examples
 
-### Core folder
-Contains MilvusUtils custom static class which is used by other scripts
+### Document Loaders
+Scripts for downloading and embedding documents from various sources
 
-Script can be parameterized by adding a collection_name or db_name on creation or deletion
+Core utilities can be parameterized with collection_name or db_name:
  
-```$ python ./core/create_collection.py  my_collection```
+```bash
+# Database operations
+python core/utils/create_db.py my_database
+python core/utils/drop_db.py my_database
+
+# Collection operations  
+python core/utils/create_collection.py my_collection
+python core/utils/drop_collection.py my_collection
+```
 
 ## Test Coverage
 
 ### Quick Test Commands
 ```bash
 # Run all core tests
-pytest Tests/test_milvus_utils.py -v
+pytest tests/test_milvus_utils.py -v
 
 # Run with coverage report
-pytest Tests/test_milvus_utils.py --cov=core --cov-report=term-missing
+pytest tests/test_milvus_utils.py --cov=core --cov-report=term-missing
 
 # Test specific functionality
-pytest Tests/test_milvus_utils.py::test_embed_text_huggingface -v
+pytest tests/test_milvus_utils.py::test_embed_text_huggingface -v
 ```
 
 ### Test Results
@@ -122,11 +133,14 @@ deactivate
 ```
 milvus-search-embeddings/
 ├── core/                    # Core package (installable)
-│   └── milvus_utils.py      # MilvusUtils class
-├── advanced-search/         # RAG and search scripts
-├── document-loaders/        # Document processing scripts
-├── benchmark/               # Performance testing scripts
-└── Tests/                   # Unit and integration tests
+│   ├── utils/               # Utility scripts (create_db, create_collection)
+├── search-advanced/         # RAG implementations with Streamlit/Gradio
+├── search-filtered/         # Filtered RAG with classification
+├── search-hello-world-milvus/ # Basic vector search examples
+├── document-loaders/        # Document processing and embedding
+├── benchmark/               # Performance testing and optimization
+├── environments/            # Environment setup scripts
+└── tests/                   # Comprehensive test suite
 ```
 
 ## Usage
@@ -147,17 +161,21 @@ embeddings = MilvusUtils.embed_text("Hello world", provider="ollama")
 
 ### Run Utility Scripts
 ```bash
-# Create collection
-python core/create_collection.py my_collection
-
-# Create database
-python core/create_db.py my_database
+# Database and collection management
+python core/utils/create_db.py my_database
+python core/utils/create_collection.py my_collection
 
 # Load documents
+python document-loaders/download_milvus_docs.py
 python document-loaders/load_milvus_docs_ollama.py
 
-# Search with RAG
-python advanced-search/search-ollama-chat.py
+# Search implementations
+python search-advanced/search_ollama_chat.py
+python search-agentic/agentic_rag_app.py
+python search-filtered/streamlit_filtered_rag.py
+
+# Web interfaces
+streamlit run search-advanced/search_ollama_streamlit_rag.py
 ```
 
 ## Milvus Database
@@ -192,19 +210,19 @@ The project includes extensive test coverage with **17 comprehensive tests** for
 ### Run Tests
 ```bash
 # Core MilvusUtils tests (17 tests)
-pytest Tests/test_milvus_utils.py -v
+pytest tests/test_milvus_utils.py -v
 
 # Document loader and integration tests
-pytest Tests/test_utils.py::TestDocumentLoaders -v
+pytest tests/test_utils.py::TestDocumentLoaders -v
 
 # Database script tests
-pytest Tests/test_db_scripts.py -v
+pytest tests/test_db_scripts.py -v
 
 # All tests with coverage
-pytest Tests/ --cov=core --cov-report=term-missing -v
+pytest tests/ --cov=core --cov-report=term-missing -v
 
 # Quick core functionality test
-pytest Tests/test_milvus_utils.py::test_get_client Tests/test_milvus_utils.py::test_create_database_new -v
+pytest tests/test_milvus_utils.py::test_get_client tests/test_milvus_utils.py::test_create_database_new -v
 ```
 
 ### Test Categories
@@ -234,9 +252,30 @@ use database --db_name test
 | `OLLAMA_EMBEDDING_MODEL` | Ollama embedding model | nomic-embed-text:v1.5 | No |
 | `HF_EMBEDDING_MODEL` | HuggingFace model | sentence-transformers/all-MiniLM-L6-v2 | No |
 | `HF_TOKEN` | HuggingFace API token | - | Yes* |
-| `OLLAMA_NUM_THREADS` | Ollama threads | 4 | No |
+| `OLLAMA_NUM_THREADS` | Ollama threads | **Auto-set to 4** | No |
 
 *Required for HuggingFace API access
+
+### Ollama Threading
+
+`OLLAMA_NUM_THREADS` is **automatically set** when using Ollama embeddings:
+
+```python
+from core import EmbeddingProvider
+# Auto-sets OLLAMA_NUM_THREADS=4 if not already set
+embeddings = EmbeddingProvider.embed_text("text", provider='ollama')
+```
+
+Manual control:
+```python
+from core import ensure_threads
+ensure_threads(8)  # Set custom thread count
+```
+
+Find optimal threads:
+```bash
+python benchmark/ollama-threads-check.py
+```
 
 ## Features
 

@@ -16,6 +16,27 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
+# Fix emoji display immediately after page config
+st.markdown("""
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap');
+    h1, h2 {
+        font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", system-ui, sans-serif !important;
+        font-size: 20px !important
+    }
+    h2, h3 {
+        font-size: 18px !important
+    }
+    button:hover, 
+    button:active,
+    button:focus          {
+        border-color: rgb(0, 104, 201) !important;
+        color: rgb(0, 104, 201) !important;
+        background-color: #ddd !important;  
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
 # Hide Streamlit UI elements and fix button colors
 if 'ui_hidden' not in st.session_state:
     st.session_state.ui_hidden = True
@@ -53,6 +74,8 @@ def initialize_session_state():
         st.session_state.chat_history = []
     if 'docs_loaded' not in st.session_state:
         st.session_state.docs_loaded = False
+    if 'current_doc_count' not in st.session_state:
+        st.session_state.current_doc_count = 0
 
 def create_sidebar():
     with st.sidebar:
@@ -80,7 +103,6 @@ def create_sidebar():
 
 def create_streamlit_ui():
     create_sidebar()
-    
     st.title("🤖 AI Question Answering System")
     st.markdown("Ask questions about Milvus database or give me instructions.")
     
@@ -91,7 +113,7 @@ def create_streamlit_ui():
             key="question_input"
         )
         
-        submit_button = st.form_submit_button("Get Answer", type="primary")
+        submit_button = st.form_submit_button("Get Answer", type="secondary")
     
     return question, submit_button
 
@@ -102,6 +124,9 @@ def main():
     
     if submit_button:
         if question.strip():
+            # Reset retrieved documents for new search
+            st.session_state.current_doc_count = 0
+            
             # Initialize RAG system only when first question is asked
             if 'rag_core' not in st.session_state:
                 with st.spinner("Initializing system..."):
@@ -113,6 +138,9 @@ def main():
             with st.spinner("Generating answer..."):
                 try:
                     response, doc_count = st.session_state.rag_core.query(question, st.session_state.chat_history)
+                    
+                    # Update current document count
+                    st.session_state.current_doc_count = doc_count
                     
                     if doc_count > 0:
                         st.info(f"Retrieved {doc_count} documents from knowledge base")
