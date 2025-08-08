@@ -10,10 +10,10 @@ fi
 
 # Environment variables to set
 declare -A env_vars=(
-    ["OLLAMA_NUM_THREADS"]="24"       # matches your CPU's logical thread count
-    ["OLLAMA_NUM_PARALLEL"]="4"       # higher for multitasking, lower for single-user
+    ["OLLAMA_NUM_THREADS"]="8"       # matches your CPU's logical thread count
+    ["OLLAMA_NUM_PARALLEL"]="2"       # higher for multitasking, lower for single-user
     ["OLLAMA_MAX_LOADED_MODELS"]="2"  # depends on RAM availability
-    ["OLLAMA_CUDA"]="1"               # if using a supported AMD GPU or ROCm
+    ["OLLAMA_CUDA"]="0"               # if using a supported AMD GPU or ROCm
 )
 
 # Remove existing entries and add new ones
