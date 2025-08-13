@@ -24,7 +24,8 @@ def test_classification_examples():
             "Tell me about vector search",
             "How does similarity search work?",
             "What are Milvus features?",
-            "How to install Milvus?"
+            "How to install Milvus?",
+            "How vectors are used to retrieve context data?"
     ]
     
     # Test cases that should return NO (no docs needed)

@@ -19,39 +19,44 @@ class RAGCore:
             input_variables=["question"],
             template="""Does this question require retrieving Milvus documentation to answer properly?
 
-Question: {question}
+            Question: {question}
 
-Answer YES ONLY if the question explicitly asks about:
-- Milvus features, capabilities, or functionality
-- Milvus technical concepts, architecture, or how Milvus works
-- Milvus usage instructions, tutorials, or guides
-- Specific Milvus technical details or explanations
-- Vector databases in the context of Milvus
+            Answer YES ONLY if the question explicitly asks about:
+            - Milvus features, capabilities, or functionality
+            - Milvus technical concepts, architecture, or how Milvus works
+            - Milvus usage instructions, tutorials, or guides
+            - Specific Milvus technical details or explanations
+            - Vector databases, vector search, or embedding concepts
+            - How vectors work, vector retrieval, or context data retrieval
+            - Database indexing, similarity search, or vector operations
 
-Answer NO if the question is:
-- A greeting, thanks, or casual conversation
-- About resuming or continuing something
-- A simple yes/no that doesn't need documentation
-- About topics unrelated to Milvus (medicine, general knowledge, etc.)
-- Vague questions like "anything else" without Milvus context
+            Answer NO if the question is:
+            - A greeting, thanks, or casual conversation
+            - About resuming, continuing, or summarizing conversation
+            - Conversation management ("resume our conversation", "continue", "summarize")
+            - Vague follow-ups using pronouns ("it", "its", "them", "that") without explicit Milvus context
+            - Questions like "Tell me more about its features" or "What about that?"
+            - A simple yes/no that doesn't need documentation
+            - About weather, health, sports, news, entertainment, or any non-technical topics
+            - About topics completely unrelated to databases, vectors, or data storage
+            - Vague questions like "anything else" without technical context
 
-Answer (YES/NO):"""
+            Answer (YES/NO):"""
         )
         
         self._rag_template = PromptTemplate(
             input_variables=["context", "question"],
-            template="""You are a Milvus database expert. Only answer questions about Milvus using the provided context.
+            template="""You are a Milvus database expert. Answer questions about Milvus using the provided context.
 
 Context: {context}
 
 Question: {question}
 
-If the question is about Milvus, answer using only the context provided.
-If the question is NOT about Milvus, respond: "I'm specialized in Milvus database questions. Please ask about Milvus features, usage, or technical details."
+Provide a comprehensive answer based on the context. Include relevant details, examples, and explanations to fully address the question. If the question is about Milvus, use the context to give a complete and informative response.
 
 Answer:"""
         )
-        
+                    
         self._direct_template = PromptTemplate(
             input_variables=["question", "history"],
             template="""Previous conversation:
@@ -59,12 +64,13 @@ Answer:"""
 
 Question: {question}
 
-I'm specialized in Milvus database questions only. 
+If asked to resume, continue, or summarize the conversation, respond with:
+"Here's what we discussed: [list each topic from the conversation history above]"
 
-If this is a greeting (hello, hi, etc.), respond with a friendly greeting and offer to help with Milvus questions.
-If asked to resume or summarize the conversation, list all the topics we discussed in detail.
-If the question is about Milvus, answer it directly.
-If the question is NOT about Milvus, respond: "I'm specialized in Milvus database questions. Please ask about Milvus features, usage, or technical details."
+Otherwise:
+- If greeting: respond with friendly greeting and offer to help with Milvus questions
+- If about Milvus: answer directly
+- If NOT about Milvus: "I'm specialized in Milvus database questions. Please ask about Milvus features, usage, or technical details."
 
 Answer:"""
         )
@@ -75,30 +81,27 @@ Answer:"""
         self.direct_chain = None
     
     def needs_retrieval(self, question: str, chat_history: List[Dict]) -> bool:
-        """Check if question needs document retrieval"""
+        """Check if question needs document retrieval using pattern matching + LLM"""
         start_time = time.time()
-        
         question_lower = question.lower()
         
-        # Strict Milvus-only filtering
-        no_docs_patterns = ['hello', 'hi', 'thanks', 'thank you', 'bye', 'goodbye', 'how are you', 'good morning', 'good afternoon', 'good evening', 'resume', 'conversation', 'chat history', 'what did we discuss', 'continue', 'summarize', 'weather', 'temperature', 'rain', 'sunny', 'cloudy', 'my name is', 'from now on', 'always include', 'anything else', 'what else', 'something else']
+        # Quick pattern-based filtering for obvious cases
+        obvious_no_patterns = [
+            'weather', 'temperature', 'rain', 'sunny', 'cloudy',
+            'hello', 'hi ', 'thanks', 'thank you', 'bye', 'goodbye',
+            'resume', 'conversation', 'summarize', 'continue',
+            'my name is', 'from now on', 'always include',
+            'tell me more about its', 'what about that', 'anything else'
+        ]
         
-        # Only retrieve docs if question explicitly mentions Milvus
-        docs_patterns = ['milvus', 'vector database', 'vector db', 'collection', 'index', 'embedding', 'similarity search']
-        
-        # Skip LLM if clearly greeting/social - use word boundaries to avoid false matches
-        import re
-        if any(re.search(r'\b' + re.escape(p) + r'\b', question_lower) for p in no_docs_patterns):
-            print(f"DEBUG - Quick filter: NO DOCS (took {time.time() - start_time:.2f}s)")
-            return False
-            
-        # Only retrieve docs if explicitly about Milvus
-        if 'milvus' in question_lower or any(pattern in question_lower for pattern in docs_patterns):
-            print(f"DEBUG - Quick filter: NEEDS DOCS (took {time.time() - start_time:.2f}s)")
-            return True
+        if any(pattern in question_lower for pattern in obvious_no_patterns):
+            result = False
+            self.classification_cache[question_lower.strip()] = result
+            print(f"DEBUG - Pattern filter: NO DOCS (took {time.time() - start_time:.2f}s)")
+            return result
         
         # Check classification cache
-        cache_key = question.lower().strip()
+        cache_key = question_lower.strip()
         if cache_key in self.classification_cache:
             result = self.classification_cache[cache_key]
             print(f"DEBUG - Classification cache hit: {'NEEDS DOCS' if result else 'NO DOCS'} (took {time.time() - start_time:.2f}s)")
@@ -108,7 +111,7 @@ Answer:"""
         if self.classification_chain is None:
             self.classification_chain = self._classification_template | self.llm | StrOutputParser()
         
-        # Simplified LLM classification with minimal context
+        # Use LLM for ambiguous cases
         llm_result = self.classification_chain.invoke({
             "question": question
         })
@@ -116,7 +119,7 @@ Answer:"""
         # LLM classification - trust the LLM decision
         needs_docs = "YES" in llm_result.upper()
         self.classification_cache[cache_key] = needs_docs
-        print(f"DEBUG - Classification: {'NEEDS DOCS' if needs_docs else 'NO DOCS'} (took {time.time() - start_time:.2f}s)")
+        print(f"DEBUG - LLM Classification: {'NEEDS DOCS' if needs_docs else 'NO DOCS'} (took {time.time() - start_time:.2f}s)")
         return needs_docs
     
     def _retrieve_documents(self, question: str) -> Tuple[str, int]:
@@ -169,15 +172,15 @@ Answer:"""
         """Handle questions without retrieval - optimized for speed"""
         start_time = time.time()
         
-        # Build direct chain on first use
-        if self.direct_chain is None:
-            self.direct_chain = self._direct_template | self.llm | StrOutputParser()
-        
-        # Only include history for explicit resume/summary requests AND if history exists
-        resume_keywords = ['resume', 'summarize', 'summary', 'conversation', 'discuss', 'talked about']
+        # Include history for resume/summary requests if history exists
+        resume_keywords = ['resume', 'summarize', 'summary', 'conversation', 'discuss', 'talked about', 'continue']
         needs_history = any(keyword in question.lower() for keyword in resume_keywords) and len(chat_history) > 0
         
         if needs_history:
+            # Build chain with history template
+            if self.direct_chain is None:
+                self.direct_chain = self._direct_template | self.llm | StrOutputParser()
+            
             # Optimize history: only questions and truncated answers
             history_items = []
             for h in chat_history[-3:]:  # Reduced from 5 to 3 items
@@ -186,14 +189,32 @@ Answer:"""
             history_text = "\n".join(history_items)
             print(f"DEBUG - Including history for summary request: {len(chat_history)} items")
             print(f"DEBUG - History text length: {len(history_text)} chars")
+            
+            response = self.direct_chain.invoke({
+                "question": question,
+                "history": history_text
+            })
         else:
-            history_text = ""
+            # Use simple template without history for non-summary questions
+            simple_template = PromptTemplate(
+                input_variables=["question"],
+                template="""Question: {question}
+
+                I'm specialized in Milvus database questions only.
+
+                If this is a greeting (hello, hi, etc.), respond with a friendly greeting and offer to help with Milvus questions.
+                If this is a personal instruction (like setting preferences), acknowledge it politely.
+                If the question is about Milvus, answer it directly.
+                If the question is NOT about Milvus, respond: "I'm specialized in Milvus database questions. Please ask about Milvus features, usage, or technical details."
+
+                Answer:"""
+            )
+            simple_chain = simple_template | self.llm | StrOutputParser()
             print(f"DEBUG - No history included for direct question")
-        
-        response = self.direct_chain.invoke({
-            "question": question,
-            "history": history_text
-        })
+            
+            response = simple_chain.invoke({
+                "question": question
+            })
         
         print(f"DEBUG - Direct response took {time.time() - start_time:.2f}s")
         return response

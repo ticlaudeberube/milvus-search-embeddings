@@ -86,7 +86,43 @@ python test_e2e_streamlit.py    # Run E2E GUI tests
 - ✅ **Classification Accuracy**: Reverted to original effective prompt
 - ✅ **Memory Management**: Single source of truth for conversation history
 
+## Known Limitations
+
+### Small Model Classification Issues
+The system uses `llama3.2:1b` (1 billion parameter model) for optimal performance on local machines without GPU acceleration. This creates some limitations:
+
+**Classification Inconsistencies:**
+- Small models struggle with complex classification rules (16 criteria in prompt)
+- May incorrectly classify obvious cases like "What is the weather today?" as needing retrieval
+- Temperature=0.0 doesn't guarantee consistency with 1B models
+
+**Mitigation Strategies:**
+- **Pattern-based pre-filtering**: Catches obvious cases before LLM classification
+- **Response caching**: Prevents repeated inconsistent classifications
+- **Simplified prompts**: Reduced complexity where possible
+
+**Performance Trade-offs:**
+- **1B model**: Fast inference (~2-5s) but inconsistent classification
+- **3B+ models**: More consistent but slower inference (~10-20s) without GPU
+- **GPU acceleration**: Recommended for production use with larger models
+
+### Recommended Improvements
+For production environments:
+1. Use `llama3.1:8b` or larger with GPU acceleration
+2. Implement ensemble classification (multiple attempts + majority vote)
+3. Fine-tune classification prompts for specific model capabilities
+
+## Known Bugs
+
+### User Name Retention Issue
+**Problem**: When user sets name preference with "My name is [Name]. From now on always include my name in the answer", the system doesn't consistently include the name in all subsequent responses.
+
+**Root Cause**: 
+- Response caching bypasses name application for repeated questions
+- Pattern filtering may interfere with name instruction processing
+- Small model inconsistency in following instructions
+
 ## Example Flow
-1. **General**: "Hello" → Classification: NO → Direct response
-2. **Technical**: "How is data stored in milvus?" → Classification: YES → Full RAG
-3. **Contextual**: "Tell me more about its features?" → Classification: YES → Full RAG
+1. **General**: "Hello" → Pattern filter: NO → Direct response
+2. **Technical**: "How is data stored in milvus?" → LLM Classification: YES → Full RAG
+3. **Off-topic**: "What is the weather?" → Pattern filter: NO → Redirect response

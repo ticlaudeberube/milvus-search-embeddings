@@ -16,20 +16,27 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Fix emoji display immediately after page config
+# Fix emoji display and add page icon container styling
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap');
-    h1, h2 {
+    
+    /* Page icon container styling */
+    .page-icon {
+        display: inline-block;
+        background-color:  white;
+        margin-right: 1rem;
         font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", system-ui, sans-serif !important;
-        font-size: 20px !important
+    }
+    h1 {
+        font-size: 2rem;
     }
     h2, h3 {
         font-size: 18px !important
     }
     button:hover, 
     button:active,
-    button:focus          {
+    button:focus {
         border-color: rgb(0, 104, 201) !important;
         color: rgb(0, 104, 201) !important;
         background-color: #ddd !important;  
@@ -103,7 +110,7 @@ def create_sidebar():
 
 def create_streamlit_ui():
     create_sidebar()
-    st.title("🤖 AI Question Answering System")
+    st.markdown('<h1><span class="page-icon">🤖</span>AI Question Answering System</h1>', unsafe_allow_html=True)
     st.markdown("Ask questions about Milvus database or give me instructions.")
     
     with st.form(key="question_form"):
