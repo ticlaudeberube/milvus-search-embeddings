@@ -197,10 +197,10 @@ The core package is fully tested with 17+ comprehensive tests:
 
 ```bash
 # Run core tests
-pytest Tests/test_milvus_utils.py -v
+pytest tests/test_milvus_utils.py -v
 
 # Test with coverage
-pytest Tests/test_milvus_utils.py --cov=core --cov-report=term-missing
+pytest tests/test_milvus_utils.py --cov=core --cov-report=term-missing
 ```
 
 ## Migration Guide

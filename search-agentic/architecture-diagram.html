@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Architecture Diagram</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+</head>
+<body>
+    <div class="mermaid">
+graph TD
+    A[User Query] --> B[Classification Agent]
+    B --> C{Query Type?}
+    C -->|Retrieval| D[Retrieval Agent]
+    C -->|Direct| E[Response Agent]
+    D --> F[Milvus Vector DB]
+    F --> G[Retrieved Documents]
+    G --> E
+    E --> H[Final Response]
+    
+    subgraph "Agent Tools"
+        I[classify_query]
+        J[search_documents]
+        K[generate_rag_answer]
+        L[generate_direct_answer]
+    end
+    
+    B -.-> I
+    D -.-> J
+    E -.-> K
+    E -.-> L
+    
+    M[RAG Orchestrator] --> B
+    M --> D
+    M --> E
+    
+    style A fill:#e1f5fe
+    style B fill:#f3e5f5
+    style D fill:#e8f5e8
+    style E fill:#fff3e0
+    style F fill:#fce4ec
+    style M fill:#f0f4c3
+    </div>
+    <script>
+        mermaid.initialize({startOnLoad:true});
+    </script>
+</body>
+</html>

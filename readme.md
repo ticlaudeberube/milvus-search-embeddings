@@ -13,7 +13,7 @@ Installable Python package with MilvusUtils class and utility scripts
 
 ### Search Modules
 - **search-advanced/**: RAG implementations with Streamlit and Gradio UIs
-- **search-agentic/**: Agentic RAG with classification and response agents
+- **search-agentic/**: LangChain ReAct agents with intelligent query routing
 - **search-filtered/**: Filtered RAG with document classification
 - **search-hello-world-milvus/**: Basic vector search examples
 
@@ -128,13 +128,53 @@ deactivate
 
 **Note:** Always activate the virtual environment before running scripts to ensure the correct Python version and dependencies.
 
+## Architecture Overview
+
+```mermaid
+graph TB
+    subgraph "Core Package"
+        A[MilvusUtils] --> B[Client]
+        A --> C[Embeddings]
+        A --> D[Databases]
+        E[Utils Scripts] --> A
+    end
+    
+    subgraph "Search Modules"
+        F[search-advanced] --> A
+        G[search-agentic] --> A
+        H[search-filtered] --> A
+        I[search-hello-world] --> A
+    end
+    
+    subgraph "Data Pipeline"
+        J[document-loaders] --> K[Milvus Vector DB]
+        A --> K
+        K --> F
+        K --> G
+        K --> H
+    end
+    
+    subgraph "Development"
+        L[Tests] --> A
+        M[Benchmark] --> A
+        N[Environments] --> A
+    end
+    
+    style A fill:#e1f5fe
+    style K fill:#fce4ec
+    style F fill:#e8f5e8
+    style G fill:#fff3e0
+```
+
 ## Project Structure
 
 ```
 milvus-search-embeddings/
 ├── core/                    # Core package (installable)
 │   ├── utils/               # Utility scripts (create_db, create_collection)
+│   └── *.py                 # Core modules (client, embeddings, databases)
 ├── search-advanced/         # RAG implementations with Streamlit/Gradio
+├── search-agentic/          # Agentic RAG with classification agents
 ├── search-filtered/         # Filtered RAG with classification
 ├── search-hello-world-milvus/ # Basic vector search examples
 ├── document-loaders/        # Document processing and embedding
@@ -176,6 +216,7 @@ python search-filtered/streamlit_filtered_rag.py
 
 # Web interfaces
 streamlit run search-advanced/search_ollama_streamlit_rag.py
+streamlit run search-agentic/agentic_rag_app.py
 ```
 
 ## Milvus Database
@@ -220,6 +261,10 @@ pytest tests/test_db_scripts.py -v
 
 # All tests with coverage
 pytest tests/ --cov=core --cov-report=term-missing -v
+
+# Agentic RAG tests
+python search-agentic/tests/test_classification.py
+python search-agentic/tests/test_integration.py
 
 # Quick core functionality test
 pytest tests/test_milvus_utils.py::test_get_client tests/test_milvus_utils.py::test_create_database_new -v
@@ -282,6 +327,9 @@ python benchmark/ollama-threads-check.py
 - ✅ **Clean package structure** with `core.MilvusUtils`
 - ✅ **Global imports** - no path manipulation needed
 - ✅ **Multiple embedding providers** (HuggingFace, Ollama)
+- ✅ **LangChain ReAct agents** with intelligent query classification
+- ✅ **Agent-based RAG pipeline** with orchestrated workflows
+- ✅ **Comprehensive agent testing** with mock and real LLM scenariosa)
 - ✅ **Environment management** with `.env` files and cross-platform scripts
 - ✅ **RAG implementations** with Streamlit and Gradio
 - ✅ **Comprehensive test suite** - 17 tests with full coverage
