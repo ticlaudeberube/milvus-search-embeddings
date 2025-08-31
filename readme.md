@@ -94,39 +94,55 @@ config = get_config()
 
 ## Installation
 
-### Windows Setup with Virtual Environment
+### UV Setup (Recommended)
 
-1. **Check Python version** (requires Python 3.12+):
-```cmd
-python --version
+1. **Install UV** (if not already installed):
+```bash
+# macOS/Linux
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Windows
+powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
 ```
 
-2. **Create virtual environment**:
-```cmd
-python -m venv venv
+2. **Install project**:
+```bash
+# Creates venv + installs all dependencies automatically
+uv sync
 ```
 
-3. **Activate virtual environment**:
-```cmd
-venv\Scripts\activate
+3. **Verify installation**:
+```bash
+uv run python diagnose_env.py  # Should show 6/6 checks passed
 ```
 
-4. **Install in development mode**:
-```cmd
-pip install -e .
-```
+**Note:** UV automatically creates and manages virtual environments - no manual setup needed!
 
-5. **Verify installation**:
-```cmd
-python -c "from core import get_client; print('Installation successful!')"
-```
+### Why Use `uv run python` Instead of `python`?
 
-### Deactivate Environment
-```cmd
+**Environment Management:**
+- `uv run python` automatically uses the project's `.venv` environment
+- `python` uses system Python or whatever's currently active
+- No need to manually activate/deactivate environments
+- Always uses correct Python + dependencies
+
+**Key Benefits:**
+- **10-100x faster** dependency resolution than pip
+- **Consistent execution** - same environment every time
+- **No activation needed** - works from any directory
+- **Safety** - can't accidentally use wrong Python version
+- **Reliability** - handles dependency conflicts better
+
+**Example:**
+```bash
+# Traditional way (error-prone)
+source .venv/bin/activate  # Easy to forget!
+python script.py
 deactivate
-```
 
-**Note:** Always activate the virtual environment before running scripts to ensure the correct Python version and dependencies.
+# UV way (foolproof)
+uv run python script.py   # Always correct environment
+```
 
 ## Project Structure
 
@@ -162,20 +178,19 @@ embeddings = MilvusUtils.embed_text("Hello world", provider="ollama")
 ### Run Utility Scripts
 ```bash
 # Database and collection management
-python core/utils/create_db.py my_database
-python core/utils/create_collection.py my_collection
+uv run python core/utils/create_db.py my_database
+uv run python core/utils/create_collection.py my_collection
 
 # Load documents
-python document-loaders/download_milvus_docs.py
-python document-loaders/load_milvus_docs_ollama.py
+uv run python document-loaders/download_milvus_docs.py
+uv run python document-loaders/load_milvus_docs_ollama.py
 
 # Search implementations
-python search-advanced/search_ollama_chat.py
-python search-agentic/agentic_rag_app.py
-python search-filtered/streamlit_filtered_rag.py
+uv run python search-advanced/search_ollama_chat.py
+uv run python search-agentic/agentic_rag_app.py
 
 # Web interfaces
-streamlit run search-advanced/search_ollama_streamlit_rag.py
+uv run streamlit run search-advanced/search_ollama_streamlit_rag.py
 ```
 
 ## Milvus Database
@@ -187,6 +202,23 @@ docker run -d --name milvus -p 19530:19530 -p 9091:9091 milvusdb/milvus:latest
 
 - Web UI: http://127.0.0.1:9091/webui/
 - [Full Installation Guide](https://milvus.io/docs/install_standalone-docker.md)
+
+## Environment Diagnostics
+
+### Quick Environment Check
+```bash
+uv run python diagnose_env.py
+
+# Should show: Score: 6/6 checks passed - Environment is ready!
+```
+
+**Diagnostic Checks:**
+- ✅ Python Version (3.12+)
+- ✅ Virtual Environment Active
+- ✅ Core Package Installed
+- ✅ Environment File (.env)
+- ✅ Milvus Connection
+- ✅ Ollama Available
 
 ## Testing
 
@@ -210,19 +242,13 @@ The project includes extensive test coverage with **17 comprehensive tests** for
 ### Run Tests
 ```bash
 # Core MilvusUtils tests (17 tests)
-pytest tests/test_milvus_utils.py -v
-
-# Document loader and integration tests
-pytest tests/test_utils.py::TestDocumentLoaders -v
-
-# Database script tests
-pytest tests/test_db_scripts.py -v
+uv run pytest tests/test_milvus_utils.py -v
 
 # All tests with coverage
-pytest tests/ --cov=core --cov-report=term-missing -v
+uv run pytest tests/ --cov=core --cov-report=term-missing -v
 
 # Quick core functionality test
-pytest tests/test_milvus_utils.py::test_get_client tests/test_milvus_utils.py::test_create_database_new -v
+uv run pytest tests/test_milvus_utils.py::test_get_client -v
 ```
 
 ### Test Categories
@@ -277,6 +303,32 @@ Find optimal threads:
 python benchmark/ollama-threads-check.py
 ```
 
+## Troubleshooting
+
+### Common Issues
+
+**Missing dependencies:**
+```bash
+uv sync  # Reinstall all dependencies
+```
+
+**PyTorch compatibility issues:**
+- Already handled in pyproject.toml with `numpy<2`
+- Run `uv sync` to get compatible versions
+
+**Python 3.13+ issues:**
+- Use Python 3.12 for best compatibility
+
+**Using `python` command on macOS:**
+```bash
+# Create alias for convenience
+echo 'alias python=python3' >> ~/.zshrc
+source ~/.zshrc
+
+# Verify
+python --version  # Should show Python 3.x
+```
+
 ## Features
 
 - ✅ **Clean package structure** with `core.MilvusUtils`
@@ -285,6 +337,7 @@ python benchmark/ollama-threads-check.py
 - ✅ **Environment management** with `.env` files and cross-platform scripts
 - ✅ **RAG implementations** with Streamlit and Gradio
 - ✅ **Comprehensive test suite** - 17 tests with full coverage
+- ✅ **Environment diagnostics** - `diagnose_env.py` script
 - ✅ **Proper mocking** - No external API calls in tests
 - ✅ **Database management** - Create, drop, and manage databases
 - ✅ **Cross-platform** Windows/Linux/macOS support

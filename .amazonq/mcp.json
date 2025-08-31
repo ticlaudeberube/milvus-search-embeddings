@@ -11,14 +11,10 @@
     },
     "awslabs.core-mcp-server": {
       "command": "uvx",
-      "args": [
-        "awslabs.core-mcp-server@latest"
-      ],
+      "args": ["awslabs.core-mcp-server@latest"],
       "env": {
         "FASTMCP_LOG_LEVEL": "ERROR"
-      },
-      "autoApprove": [],
-      "disabled": false
+      }
     },
     "awslabs.aws-documentation-mcp-server": {
       "command": "uvx",
@@ -26,9 +22,7 @@
       "env": {
         "FASTMCP_LOG_LEVEL": "ERROR",
         "AWS_DOCUMENTATION_PARTITION": "aws"
-      },
-      "disabled": false,
-      "autoApprove": []
+      }
     }
   }
 }

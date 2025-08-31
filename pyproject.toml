@@ -9,25 +9,46 @@ description = "Python POC for Milvus embeddings, search and Milvus Docs RAG"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "pymilvus",
+    "pymilvus[model]",
     "sentence-transformers",
-    "torch",
-    "ollama"
-]
-
-[tool.pytest.ini_options]
-testpaths = ["Tests"]
-python_files = "test_*.py"
-addopts = "-v --tb=short"
-
-[project.optional-dependencies]
-dev = [
+    "torch==2.2.2",
+    "ollama",
+    "numpy<2",
     "pytest",
     "pytest-cov",
     "gradio",
     "streamlit",
-    "huggingface-hub"
+    "langchain",
+    "langchain_community",
+    "langchain_milvus",
+    "langchain_huggingface",
+    "langchain_core",
+    "langchain_ollama",
+    "langchain-text-splitters",
+    "langchain_openai",
+    "huggingface_hub",
+    "termcolor",
+    "beautifulsoup4",
+    "bs4",
+    "wget",
+    "matplotlib",
+    "seaborn",
+    "pandas",
+    "scikit-learn",
+    "pypdf",
+    "requests",
+    "html5lib",
+    "milvus-cli",
+    "aiohttp",
+    "mcp"
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+addopts = "-v --tb=short"
+
+
 
 [tool.setuptools.packages.find]
 where = ["."]
