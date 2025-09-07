@@ -1,0 +1,82 @@
+{
+  "name": "default-agent",
+  "version": "1.0.0",
+  "description": "Default agent configuration",
+  "mcpServers": {
+    "milvus": {
+      "command": "python",
+      "args": [
+        "-m",
+        "mcp_server_milvus"
+      ],
+      "env": {
+        "MILVUS_URI": "http://localhost:19530",
+        "MILVUS_TOKEN": "",
+        "MILVUS_DB_NAME": "default"
+      }
+    },
+    "awslabs.core-mcp-server": {
+      "command": "uvx",
+      "args": [
+        "awslabs.core-mcp-server@latest"
+      ],
+      "env": {
+        "FASTMCP_LOG_LEVEL": "ERROR"
+      }
+    },
+    "awslabs.aws-documentation-mcp-server": {
+      "command": "uvx",
+      "args": [
+        "awslabs.aws-documentation-mcp-server@latest"
+      ],
+      "env": {
+        "FASTMCP_LOG_LEVEL": "ERROR",
+        "AWS_DOCUMENTATION_PARTITION": "aws"
+      }
+    }
+  },
+  "tools": [
+    "@milvus",
+    "@awslabs.core-mcp-server",
+    "@awslabs.aws-documentation-mcp-server",
+    "fsRead",
+    "fsWrite",
+    "fsReplace",
+    "listDirectory",
+    "fileSearch",
+    "executeBash",
+    "codeReview",
+    "displayFindings"
+  ],
+  "allowedTools": [
+    "fsRead",
+    "listDirectory",
+    "fileSearch",
+    "codeReview",
+    "displayFindings"
+  ],
+  "toolsSettings": {
+    "execute_bash": {
+      "alwaysAllow": [
+        {
+          "preset": "readOnly"
+        }
+      ]
+    },
+    "use_aws": {
+      "alwaysAllow": [
+        {
+          "preset": "readOnly"
+        }
+      ]
+    }
+  },
+  "includedFiles": [
+    "AmazonQ.md",
+    "README.md",
+    ".amazonq/rules/**/*.md"
+  ],
+  "resources": [],
+  "createHooks": [],
+  "promptHooks": []
+}

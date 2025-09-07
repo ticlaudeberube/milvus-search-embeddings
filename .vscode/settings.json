@@ -1,23 +1,12 @@
 {
-    "python.testing.pytestArgs": [
-        "unittest"
-    ],
-    "python.testing.unittestEnabled": false,
-    "python.testing.pytestEnabled": true,
     "python.defaultInterpreterPath": "./.venv/bin/python",
     "python.terminal.activateEnvironment": true,
     "terminal.integrated.env.osx": {
-        "PYTHONPATH": "${workspaceFolder}"
+        "VIRTUAL_ENV": "${workspaceFolder}/.venv",
+        "PATH": "${workspaceFolder}/.venv/bin:${env:PATH}"
     },
-    "files.exclude": {
-        "**/.git": true,
-        "**/.svn": true,
-        "**/.hg": true,
-        "**/.DS_Store": true,
-        "**/Thumbs.db": true,
-        "**/.retool_types/**": true,
-        "**/*tsconfig.json": true,
-        ".cache": true,
-        "retool.config.json": true
+    "terminal.integrated.env.windows": {
+        "VIRTUAL_ENV": "${workspaceFolder}/.venv",
+        "PATH": "${workspaceFolder}/.venv/Scripts;${env:PATH}"
     }
 }

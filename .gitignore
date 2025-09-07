@@ -26,3 +26,7 @@ document-loaders/**/*
 !document-loaders/**/*.py
 py312-env/**/*
 typings/**
+airflow/logs/*
+airflow/airflow.db
+data/*
+airflow/simple_auth_manager_passwords.json.generated

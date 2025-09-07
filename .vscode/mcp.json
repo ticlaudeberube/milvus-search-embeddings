@@ -6,7 +6,23 @@
       "env": {
         "MILVUS_URI": "http://localhost:19530",
         "MILVUS_TOKEN": "",
-        "MILVUS_DB_NAME": "default"
+        "MILVUS_DB_NAME": "default",
+        "COLLECTION_NAME": "milvus_docs",
+        "DIMENSION": "768"
+      }
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/Users/claude/Documents/workspace/milvus-search-embeddings"],
+      "env": {
+        "MCP_LOG_LEVEL": "INFO"
+      }
+    },
+    "context7": {
+      "command": "uvx",
+      "args": ["context7-mcp"],
+      "env": {
+        "MCP_LOG_LEVEL": "INFO"
       }
     },
     "awslabs.core-mcp-server": {

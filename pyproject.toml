@@ -38,9 +38,10 @@ dependencies = [
     "pypdf",
     "requests",
     "html5lib",
-    "milvus-cli",
     "aiohttp",
-    "mcp"
+    "mcp",
+
+    "python-dotenv",
 ]
 
 [tool.pytest.ini_options]
