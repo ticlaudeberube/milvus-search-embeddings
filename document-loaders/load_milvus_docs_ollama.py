@@ -1,8 +1,11 @@
 # We load all markdown files from the folder milvus_docs/en/faq. For each document, we just simply use "# "
 # to separate the content in the file, which can roughly separate the content of each main part of the markdown file.
 import os
+import json
+import hashlib
 from glob import glob
 from tqdm import tqdm
+from pathlib import Path
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -45,7 +48,7 @@ def create_collection(embedding_dim=1024):
     print(f"Collection '{collection_name}' created successfully.")
 
 
-def process():
+def process(insertCollection=True):
     # Check collection and get user confirmation
     if not check_collection_and_confirm():
         return
@@ -65,17 +68,25 @@ def process():
         try:
             vector = EmbeddingProvider.embed_text(line, provider='ollama')
             if vector:
-                data.append({"id": len(data), "vector": vector, "text": line})
+                checksum = hashlib.md5(line.encode('utf-8')).hexdigest()
+                data.append({"id": len(data), "vector": vector, "text": line, "checksum": checksum})
         except Exception as e:
             print(f"Failed to embed text chunk {i}: {e}")
             continue
     
     if len(data) == 0:
         return
+    
+    # Save to JSON file
+    Path("./data").mkdir(exist_ok=True)
+    with open("./data/embeddings.json", "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+    print(f"Saved {len(data)} embeddings to ./data/embeddings.json")
         
-    dimension = len(data[0]['vector'])
-    create_collection(dimension)
-    client.insert(collection_name=collection_name, data=data)
+    if insertCollection:
+        dimension = len(data[0]['vector'])
+        create_collection(dimension)
+        client.insert(collection_name=collection_name, data=data)
 
 if __name__ == "__main__":
     process()
