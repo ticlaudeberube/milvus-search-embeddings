@@ -33,12 +33,24 @@
         "FASTMCP_LOG_LEVEL": "ERROR",
         "AWS_DOCUMENTATION_PARTITION": "aws"
       }
+    },
+    "apache-airflow": {
+      "command": "python",
+      "args": [
+        "-m",
+        "mcp_server_apache_airflow"
+      ],
+      "env": {
+        "AIRFLOW_HOME": "./airflow",
+        "AIRFLOW__CORE__DAGS_FOLDER": "./airflow/dags"
+      }
     }
   },
   "tools": [
     "@milvus",
     "@awslabs.core-mcp-server",
     "@awslabs.aws-documentation-mcp-server",
+    "@apache-airflow",
     "fsRead",
     "fsWrite",
     "fsReplace",
